@@ -11,18 +11,22 @@
 // A room composed of walls and doors
 class cRoom
 {
-public:
+
     static std::vector<cRoom> theHouse; // the house composed of rooms
+    static int theSeperation;
 
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
     std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
+    std::vector<cxy> myPipePoints;
 
+public:
     cRoom(
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints)
     {
         myWallPoints = wallPoints;
         myDoorPoints = doorPoints;
+        pipe();
     }
 
     std::vector<std::vector<cxy>> wallSegments()
@@ -52,6 +56,43 @@ public:
         return ret;
     }
 
+    std::vector<cxy> pipes()
+    {
+        return myPipePoints;
+    }
+
+    void pipe()
+    {
+        // start at the first door
+        cxy p = myWallPoints[myDoorPoints[0]];
+        p.x += theSeperation;
+        myPipePoints.push_back(p);
+        p.y += theSeperation;
+        myPipePoints.push_back(p);
+        p = myWallPoints[myDoorPoints[0]+1];
+        p.y += theSeperation;
+        myPipePoints.push_back(p);
+        p = myWallPoints[myDoorPoints[0]+2];
+        p.x -= theSeperation;
+        p.y += theSeperation;
+        myPipePoints.push_back(p);
+    }
+
+    static void set(int seperation)
+    {
+        theSeperation = seperation;
+    }
+
+    static std::vector<std::vector<cxy>> housePipes()
+    {
+        std::vector<std::vector<cxy>> ret;
+        for (auto &r : theHouse)
+        {
+            ret.push_back(r.pipes());
+        }
+        return ret;
+    }
+
     /// @brief get the wall segments of each room in the house
     /// @return a vector of rooms containing a vector of wall segments containing a vector of wall points
 
@@ -78,6 +119,7 @@ public:
 };
 
 std::vector<cRoom> cRoom::theHouse;
+int cRoom::theSeperation;
 
 // generate a one room house
 void gen1()
@@ -87,6 +129,7 @@ void gen1()
 
     cRoom::clear();
     cRoom::add(wallPoints, doorPoints);
+    cRoom::set(3); // pipe seperation
 }
 
 class cGUI : public cStarterGUI
@@ -108,10 +151,9 @@ public:
                 wex::shapes S(ps);
                 S.penThick(4);
 
-                // auto segs = cRoom::houseWallSegments();
-
                 // loop over rooms
                 for (auto &r : cRoom::houseWallSegments())
+                {
 
                     // loop over wall segments
                     for (auto &s : r)
@@ -144,6 +186,30 @@ public:
                         y2 = off + scale * r[0][0].y;
                         S.line({x1, y1, x2, y2});
                     }
+                }
+
+                S.penThick(1);
+                for (auto &r : cRoom::housePipes())
+                {
+                    int x1, y1, x2, y2;
+                    x2 = INT_MAX;
+                    for (auto &p : r)
+                    {
+                        if (x2 == INT_MAX)
+                        {
+                            x2 = off + scale * p.x;
+                            y2 = off + scale * p.y;
+                        }
+                        else
+                        {
+                            x1 = x2;
+                            y1 = y2;
+                            x2 = off + scale * p.x;
+                            y2 = off + scale * p.y;
+                            S.line({x1, y1, x2, y2});
+                        }
+                    }
+                }
             });
 
         show();
