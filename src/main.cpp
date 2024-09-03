@@ -112,56 +112,67 @@ public:
         myPipePoints.push_back(p2);
         myPipePoints.push_back(p3);
 
-        for (int i = myDoorPoints[0] + 2;
-             i < myWallPoints.size();
-             i++)
+        for (int L = 1; true; L++)
         {
-            p1 = myWallPoints[i - 1];
-            p2 = myWallPoints[i];
+            int wallSeperation = L * theSeperation;
+
+            for (int i = myDoorPoints[0] + 2;
+                 i < myWallPoints.size();
+                 i++)
+            {
+                p1 = myWallPoints[i - 1];
+                p2 = myWallPoints[i];
+                switch (side(p1, p2))
+                {
+                case eMargin::top:
+                    p2.x -= wallSeperation;
+                    p2.y += wallSeperation;
+                    break;
+                case eMargin::right:
+                    p2.x -= wallSeperation;
+                    p2.y -= wallSeperation;
+                    break;
+                case eMargin::bottom:
+                    p2.x += wallSeperation;
+                    p2.y -= wallSeperation;
+                    break;
+                case eMargin::left:
+                    p2.x -= wallSeperation;
+                    p2.y += wallSeperation;
+                    break;
+                }
+                myPipePoints.push_back(p2);
+            }
+
+            // close the polygon
+            p1 = myWallPoints.back();
+            p2 = myWallPoints[0];
             switch (side(p1, p2))
             {
             case eMargin::top:
-                p2.x -= theSeperation;
-                p2.y += theSeperation;
+                p2.x -= wallSeperation;
+                p2.y += wallSeperation;
                 break;
             case eMargin::right:
-                p2.x -= theSeperation;
-                p2.y -= theSeperation;
+                p2.x -= wallSeperation;
+                p2.y -= wallSeperation;
                 break;
             case eMargin::bottom:
-                p2.x += theSeperation;
-                p2.y -= theSeperation;
+                p2.x += wallSeperation;
+                p2.y -= wallSeperation;
                 break;
             case eMargin::left:
-                p2.x -= theSeperation;
-                p2.y += theSeperation;
+                p2.x += wallSeperation;
+                p2.y += wallSeperation + theSeperation;
                 break;
             }
+
+            // check if spiral has become vanishingly small
+            if( myPipePoints.back().dist2( p2) < theSeperation )
+                break;
+
             myPipePoints.push_back(p2);
         }
-
-        p1 = myWallPoints.back();
-        p2 = myWallPoints[0];
-        switch (side(p1, p2))
-        {
-        case eMargin::top:
-            p2.x -= theSeperation;
-            p2.y += theSeperation;
-            break;
-        case eMargin::right:
-            p2.x -= theSeperation;
-            p2.y -= theSeperation;
-            break;
-        case eMargin::bottom:
-            p2.x += theSeperation;
-            p2.y -= theSeperation;
-            break;
-        case eMargin::left:
-            p2.x += theSeperation;
-            p2.y += theSeperation;
-            break;
-        }
-        myPipePoints.push_back(p2);
     }
 
     static void set(int seperation)

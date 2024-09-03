@@ -1,5 +1,5 @@
 #source file search paths
-VPATH = ./src 
+VPATH = ./src ../raven-set
 
 	# compiler include search paths
 INCS = -I./include \
@@ -20,7 +20,8 @@ CCflags = -std=c++17 $(OPT) -D_mingw_
 
 # sources
 OBJ_starter = \
-	$(ODIR)/main.o 
+	$(ODIR)/main.o \
+	$(ODIR)/cxy.o \
 
 ### COMPILE
 
