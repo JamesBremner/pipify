@@ -168,7 +168,7 @@ public:
             }
 
             // check if spiral has become vanishingly small
-            if( myPipePoints.back().dist2( p2) < theSeperation )
+            if (myPipePoints.back().dist2(p2) < theSeperation)
                 break;
 
             myPipePoints.push_back(p2);
@@ -229,6 +229,26 @@ void gen1()
     cRoom::add(wallPoints, doorPoints);
 }
 
+// generate a house with one L shaped room
+void genL()
+{
+    std::vector<cxy> wallPoints = {
+        {0, 0},
+        {10, 0},
+        {30, 0},
+        {100, 0},
+        {100, 50},
+        {200, 50},
+        {200, 100},
+        {0, 100},
+    };
+    std::vector<int> doorPoints = {1};
+
+    cRoom::clear();
+    cRoom::set(6); // pipe seperation
+    cRoom::add(wallPoints, doorPoints);
+}
+
 class cGUI : public cStarterGUI
 {
 public:
@@ -238,7 +258,7 @@ public:
               {50, 50, 1000, 500})
     {
 
-        gen1();
+        genL();
 
         fm.events().draw(
             [](PAINTSTRUCT &ps)
