@@ -54,7 +54,7 @@ public:
 
     /// @brief get the wall segments of each room in the house
     /// @return a vector of rooms containing a vector of wall segments containing a vector of wall points
-    
+
     static std::vector<std::vector<std::vector<cxy>>> houseWallSegments()
     {
         std::vector<std::vector<std::vector<cxy>>> ret;
@@ -79,35 +79,79 @@ public:
 
 std::vector<cRoom> cRoom::theHouse;
 
+// generate a one room house
+void gen1()
+{
+    std::vector<cxy> wallPoints = {{0, 0}, {10, 0}, {30, 0}, {100, 0}, {100, 100}, {0, 100}};
+    std::vector<int> doorPoints = {1};
+
+    cRoom::clear();
+    cRoom::add(wallPoints, doorPoints);
+}
+
 class cGUI : public cStarterGUI
 {
 public:
     cGUI()
         : cStarterGUI(
               "Pipify",
-              {50, 50, 1000, 500}),
-          lb(wex::maker::make<wex::label>(fm))
+              {50, 50, 1000, 500})
     {
-        lb.move(50, 50, 100, 30);
-        lb.text("Hello World");
+
+        gen1();
+
+        fm.events().draw(
+            [](PAINTSTRUCT &ps)
+            {
+                const int scale = 3;
+                const int off = 20;
+                wex::shapes S(ps);
+                S.penThick(4);
+
+                // auto segs = cRoom::houseWallSegments();
+
+                // loop over rooms
+                for (auto &r : cRoom::houseWallSegments())
+
+                    // loop over wall segments
+                    for (auto &s : r)
+                    {
+                        int x1, y1, x2, y2;
+                        x2 = INT_MAX;
+
+                        // loop over points
+                        for (auto &p : s)
+                        {
+                            if (x2 == INT_MAX)
+                            {
+                                x2 = off + scale * p.x;
+                                y2 = off + scale * p.y;
+                            }
+                            else
+                            {
+                                x1 = x2;
+                                y1 = y2;
+                                x2 = off + scale * p.x;
+                                y2 = off + scale * p.y;
+                                S.line({x1, y1, x2, y2});
+                            }
+                        }
+
+                        // close the polygon
+                        x1 = x2;
+                        y1 = y2;
+                        x2 = off + scale * r[0][0].x;
+                        y2 = off + scale * r[0][0].y;
+                        S.line({x1, y1, x2, y2});
+                    }
+            });
 
         show();
         run();
     }
 
 private:
-    wex::label &lb;
 };
-
-// generate a one room house
-void gen1()
-{
-    std::vector<cxy> wallPoints = {{0, 0}, {10, 0}, {15, 0}, {100, 0}, {100, 100}, {0, 100}};
-    std::vector<int> doorPoints = {1};
-
-    cRoom::clear();
-    cRoom::add(wallPoints, doorPoints);
-}
 
 bool unitTest()
 {
@@ -118,11 +162,11 @@ bool unitTest()
     if (segs.size() != 1)
         return false;
     // the room has two wall segments
-    if( segs[0].size() != 2 )
+    if (segs[0].size() != 2)
         return false;
-    if( segs[0][0].size() != 2)
+    if (segs[0][0].size() != 2)
         return false;
-    if( segs[0][1].size() != 4)
+    if (segs[0][1].size() != 4)
         return false;
     return true;
 }
