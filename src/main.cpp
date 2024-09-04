@@ -8,215 +8,186 @@
 #include <cxy.h>
 #include "cStarterGUI.h"
 
-// A room composed of walls and doors
-class cRoom
+#include "pipify.h"
+
+std::vector<cRoom> cRoom::theHouse;
+
+int cRoom::theSeperation;
+
+void cRoom::add(
+    const std::vector<cxy> wallPoints,
+    const std::vector<int> doorPoints)
+{
+    theHouse.emplace_back(wallPoints, doorPoints);
+}
+void cRoom::clear()
+{
+    theHouse.clear();
+}
+
+std::vector<std::vector<cxy>> cRoom::wallSegments()
+{
+    std::vector<std::vector<cxy>> ret;
+    std::vector<cxy> segment;
+    int idp = myDoorPoints[0];
+    for (int idw = 0; idw < myWallPoints.size(); idw++)
+    {
+        segment.push_back(myWallPoints[idw]);
+        if (idw == idp)
+        {
+            // door point
+            ret.push_back(segment);
+            segment.clear();
+            idp++;
+            if (idp > myDoorPoints.size())
+            {
+                // found all the doors
+                idp = myWallPoints.size() + 10;
+            }
+        }
+    }
+    if (segment.size())
+        ret.push_back(segment);
+
+    return ret;
+}
+
+cRoom::eMargin cRoom::side(const cxy &p1, const cxy &p2)
+{
+    if (p1.x == p2.x)
+        if (p1.y < p2.y)
+            return eMargin::right;
+        else
+            return eMargin::left;
+    else if (p1.x < p2.x)
+        return eMargin::top;
+    else
+        return eMargin::bottom;
+}
+
+cRoom::eCorner cRoom::corner(
+    const cxy &p1,
+    const cxy &p2,
+    const cxy &p3)
+{
+    eMargin m1 = side(p1, p2);
+    eMargin m2 = side(p2, p3);
+    if (m1 == eMargin::left && m2 == eMargin::top)
+        return eCorner::tl_vex;
+    if (m1 == eMargin::top && m2 == eMargin::left)
+        return eCorner::tl_cav;
+    if (m1 == eMargin::top && m2 == eMargin::right)
+        return eCorner::tr_vex;
+    if (m1 == eMargin::right && m2 == eMargin::top)
+        return eCorner::tr_cav;
+    if (m1 == eMargin::right && m2 == eMargin::bottom)
+        return eCorner::br_vex;
+    if (m1 == eMargin::bottom && m2 == eMargin::right)
+        return eCorner::br_cav;
+    if (m1 == eMargin::bottom && m2 == eMargin::left)
+        return eCorner::bl_vex;
+    if (m1 == eMargin::left && m2 == eMargin::bottom)
+        return eCorner::bl_cav;
+
+    return eCorner::error;
+}
+void cRoom::pipe()
 {
 
-    static std::vector<cRoom> theHouse; // the house composed of rooms
-    static int theSeperation;
-
-    std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
-    std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
-    std::vector<cxy> myPipePoints;
-
-public:
-    cRoom(
-        const std::vector<cxy> wallPoints,
-        const std::vector<int> doorPoints)
+    // start at the first door
+    cxy d1 = myWallPoints[myDoorPoints[0]];
+    cxy d2 = myWallPoints[myDoorPoints[0] + 1];
+    cxy p1, p2, p3;
+    switch (side(d1, d2))
     {
-        myWallPoints = wallPoints;
-        myDoorPoints = doorPoints;
-        pipe();
+    case eMargin::top:
+        p1.x = d1.x + theSeperation;
+        p1.y = d1.y;
+        p2.x = p1.x;
+        p2.y = p1.y + theSeperation;
+        p3.x = d2.x;
+        p3.y = p2.y;
+        break;
     }
+    myPipePoints.push_back(p1);
+    myPipePoints.push_back(p2);
+    myPipePoints.push_back(p3);
 
-    std::vector<std::vector<cxy>> wallSegments()
+    for (int L = 1; L < 5; L++)
+    // for (int L = 1; true; L++)
     {
-        std::vector<std::vector<cxy>> ret;
-        std::vector<cxy> segment;
-        int idp = myDoorPoints[0];
-        for (int idw = 0; idw < myWallPoints.size(); idw++)
+        int wallSeperation = L * theSeperation;
+
+        for (int i = myDoorPoints[0] + 2;
+             i < myWallPoints.size();
+             i++)
         {
-            segment.push_back(myWallPoints[idw]);
-            if (idw == idp)
-            {
-                // door point
-                ret.push_back(segment);
-                segment.clear();
-                idp++;
-                if (idp > myDoorPoints.size())
-                {
-                    // found all the doors
-                    idp = myWallPoints.size() + 10;
-                }
-            }
-        }
-        if (segment.size())
-            ret.push_back(segment);
-
-        return ret;
-    }
-
-    std::vector<cxy> pipes()
-    {
-        return myPipePoints;
-    }
-
-    enum class eMargin
-    {
-        top,
-        right,
-        bottom,
-        left
-    };
-
-    /// @brief which side of the room are two points on
-    /// @param p1
-    /// @param p2
-    /// @return margin
-    ///
-    /// Assumnes room polygon defined clockwise
-
-    eMargin side(const cxy &p1, const cxy &p2)
-    {
-        if (p1.x == p2.x)
-            if (p1.y < p2.y)
-                return eMargin::right;
+            p1 = myWallPoints[i - 1];
+            p2 = myWallPoints[i];
+            if (i == myWallPoints.size() - 1)
+                myWallPoints[0];
             else
-                return eMargin::left;
-        else if (p1.x < p2.x)
-            return eMargin::top;
-        else
-            return eMargin::bottom;
-    }
+                p3 = myWallPoints[i + 1];
 
-    // layout pipes in room
-    void pipe()
-    {
-
-        // start at the first door
-        cxy d1 = myWallPoints[myDoorPoints[0]];
-        cxy d2 = myWallPoints[myDoorPoints[0] + 1];
-        cxy p1, p2, p3;
-        switch (side(d1, d2))
-        {
-        case eMargin::top:
-            p1.x = d1.x + theSeperation;
-            p1.y = d1.y;
-            p2.x = p1.x;
-            p2.y = p1.y + theSeperation;
-            p3.x = d2.x;
-            p3.y = p2.y;
-            break;
-        }
-        myPipePoints.push_back(p1);
-        myPipePoints.push_back(p2);
-        myPipePoints.push_back(p3);
-
-        for (int L = 1; true; L++)
-        {
-            int wallSeperation = L * theSeperation;
-
-            for (int i = myDoorPoints[0] + 2;
-                 i < myWallPoints.size();
-                 i++)
+            switch (corner(p1, p2, p3))
             {
-                p1 = myWallPoints[i - 1];
-                p2 = myWallPoints[i];
-                switch (side(p1, p2))
-                {
-                case eMargin::top:
-                    p2.x -= wallSeperation;
-                    p2.y += wallSeperation;
-                    break;
-                case eMargin::right:
-                    p2.x -= wallSeperation;
-                    p2.y -= wallSeperation;
-                    break;
-                case eMargin::bottom:
-                    p2.x += wallSeperation;
-                    p2.y -= wallSeperation;
-                    break;
-                case eMargin::left:
-                    p2.x -= wallSeperation;
-                    p2.y += wallSeperation;
-                    break;
-                }
-                myPipePoints.push_back(p2);
-            }
-
-            // close the polygon
-            p1 = myWallPoints.back();
-            p2 = myWallPoints[0];
-            switch (side(p1, p2))
-            {
-            case eMargin::top:
+            case eCorner::tr_vex:
                 p2.x -= wallSeperation;
                 p2.y += wallSeperation;
                 break;
-            case eMargin::right:
+            case eCorner::br_vex:
                 p2.x -= wallSeperation;
                 p2.y -= wallSeperation;
                 break;
-            case eMargin::bottom:
+            case eCorner::bl_vex:
                 p2.x += wallSeperation;
                 p2.y -= wallSeperation;
                 break;
-            case eMargin::left:
+            case eCorner::tl_vex:
                 p2.x += wallSeperation;
-                p2.y += wallSeperation + theSeperation;
+                p2.y += wallSeperation;
                 break;
+            case eCorner::tr_cav:
+                p2.x -= wallSeperation;
+                p2.y += wallSeperation;
+                break;
+            case eCorner::error:
+                throw std::runtime_error(
+                    " pipe corner error");
             }
-
-            // check if spiral has become vanishingly small
-            if (myPipePoints.back().dist2(p2) < theSeperation)
-                break;
-
             myPipePoints.push_back(p2);
         }
-    }
 
-    static void set(int seperation)
-    {
-        theSeperation = seperation;
-    }
-
-    static std::vector<std::vector<cxy>> housePipes()
-    {
-        std::vector<std::vector<cxy>> ret;
-        for (auto &r : theHouse)
+        // close the polygon
+        p1 = myWallPoints.back();
+        p2 = myWallPoints[0];
+        switch (side(p1, p2))
         {
-            ret.push_back(r.pipes());
+        case eMargin::top:
+            p2.x -= wallSeperation;
+            p2.y += wallSeperation;
+            break;
+        case eMargin::right:
+            p2.x -= wallSeperation;
+            p2.y -= wallSeperation;
+            break;
+        case eMargin::bottom:
+            p2.x += wallSeperation;
+            p2.y -= wallSeperation;
+            break;
+        case eMargin::left:
+            p2.x += wallSeperation;
+            p2.y += wallSeperation + theSeperation;
+            break;
         }
-        return ret;
-    }
 
-    /// @brief get the wall segments of each room in the house
-    /// @return a vector of rooms containing a vector of wall segments containing a vector of wall points
+        // check if spiral has become vanishingly small
+        if (myPipePoints.back().dist2(p2) < theSeperation)
+            break;
 
-    static std::vector<std::vector<std::vector<cxy>>> houseWallSegments()
-    {
-        std::vector<std::vector<std::vector<cxy>>> ret;
-        for (auto &r : theHouse)
-        {
-            ret.push_back(r.wallSegments());
-        }
-        return ret;
+        myPipePoints.push_back(p2);
     }
-
-    static void add(
-        const std::vector<cxy> wallPoints,
-        const std::vector<int> doorPoints)
-    {
-        theHouse.emplace_back(wallPoints, doorPoints);
-    }
-    static void clear()
-    {
-        theHouse.clear();
-    }
-};
-
-std::vector<cRoom> cRoom::theHouse;
-int cRoom::theSeperation;
+}
 
 // generate a one room house
 void gen1()
@@ -337,31 +308,13 @@ public:
 private:
 };
 
-bool unitTest()
-{
-    gen1();
-    auto segs = cRoom::houseWallSegments();
-
-    // there is one room in the house
-    if (segs.size() != 1)
-        return false;
-    // the room has two wall segments
-    if (segs[0].size() != 2)
-        return false;
-    if (segs[0][0].size() != 2)
-        return false;
-    if (segs[0][1].size() != 4)
-        return false;
-    return true;
-}
-
 main()
 {
-    // if (!unitTest())
-    // {
-    //     std::cout << "unit test failed\n";
-    //     exit(1);
-    // }
+    if (!unitTest())
+    {
+        std::cout << "unit test failed\n";
+        exit(1);
+    }
 
     cGUI theGUI;
     return 0;
