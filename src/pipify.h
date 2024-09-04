@@ -68,6 +68,13 @@ public:
         const cxy &p2,
         const cxy &p3);
 
+    /// @brief check for crossed pipe
+    /// @param p1 start of pipe segment
+    /// @param p2 end of pipe segment
+    /// @return true if pipe segment crosses any existing pipe segments
+
+    bool isPipeCrossing( const cxy& p1, const cxy& p2 ) const;
+
     // layout pipes in room
     void pipe();
 
@@ -106,6 +113,8 @@ public:
     static void clear();
 
 };
+
+// free functions
 
 bool unitTest();
 void gen1();

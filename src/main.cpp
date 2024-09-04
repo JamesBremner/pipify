@@ -91,6 +91,31 @@ cRoom::eCorner cRoom::corner(
 
     return eCorner::error;
 }
+
+bool cRoom::isPipeCrossing(const cxy &p1, const cxy &p2) const
+{
+    cxy intersection;
+
+    // loop over previous pipe segments
+    for (
+        int i = myPipePoints.size() - 1;
+        i > 0;
+        i--)
+    {
+        // find intersection
+        if (cxy::isIntersection(
+                intersection,
+                p1, p2,
+                myPipePoints[i - 1], myPipePoints[i]))
+        {
+            // check that intersection is not at either end of pipe segment
+            if ((!(intersection == p1)) &&
+                (!(intersection == p2)))
+                return true;
+        }
+    }
+    return false;
+}
 void cRoom::pipe()
 {
 
@@ -113,8 +138,10 @@ void cRoom::pipe()
     myPipePoints.push_back(p2);
     myPipePoints.push_back(p3);
 
-    for (int L = 1; L < 5; L++)
-    // for (int L = 1; true; L++)
+    bool cross = false;
+
+    //for (int L = 1; L < 5; L++)
+    for (int L = 1; true; L++)
     {
         int wallSeperation = L * theSeperation;
 
@@ -155,8 +182,16 @@ void cRoom::pipe()
                 throw std::runtime_error(
                     " pipe corner error");
             }
+
+            cross = isPipeCrossing(myPipePoints.back(), p2);
+            if (cross)
+                break;
+
             myPipePoints.push_back(p2);
         }
+
+        if (cross)
+            break;
 
         // close the polygon
         p1 = myWallPoints.back();

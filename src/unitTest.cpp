@@ -46,5 +46,15 @@ bool unitTest()
     if( cRoom::corner( p1,p2,p3) != cRoom::eCorner::tr_cav )
         return false;
 
+    p1 = cxy(94,94);
+    p2 = cxy( 6,94);
+    cxy a( 16,0 );
+    cxy b( 16,6 );
+    cxy intersection;
+    cxy::isIntersection(
+                intersection,
+                p1, p2,
+                a,b);
+
     return true;
 }
