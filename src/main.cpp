@@ -495,11 +495,11 @@ private:
 
 main()
 {
-    // if (!unitTest())
-    // {
-    //     std::cout << "unit test failed\n";
-    //     exit(1);
-    // }
+    if (!unitTest())
+    {
+        std::cout << "unit test failed\n";
+        exit(1);
+    }
 
     cGUI theGUI;
     return 0;
