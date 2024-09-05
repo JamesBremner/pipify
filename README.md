@@ -1,5 +1,7 @@
 # Pipify
 
+Design the underfloor heating of a house by laying out the pipes in a spiral in each room.
+
 ## Specication of the rooms in a house
 
 Each room is specified by a clockwise open polygon of 2D points ( Every corner is specified by one point, every door is specified by a pair of points. ) and a vector of indices in the polygon of the first point of a pair specifying a door
@@ -14,4 +16,14 @@ For example, a square room with one door is specified as:
 which when rendered gives
 
 ![image](https://github.com/user-attachments/assets/5d1d233f-919c-4ad8-b202-1d28d04ace88)
+
+## Pipe layout in a convex room
+
+![image](https://github.com/user-attachments/assets/91cb9fca-23b7-4e03-9c8e-e993578b6880)
+
+## Pipe layout in a L-shaped room
+
+![image](https://github.com/user-attachments/assets/441fc5f4-7faf-4f56-bfae-093d179ca9b9)
+
+
 
