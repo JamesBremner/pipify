@@ -5,7 +5,7 @@
 
 bool unitTest()
 {
-    gen1();
+    cRoom::readfile("../dat/r1.text");
     auto segs = cRoom::houseWallSegments();
 
     // there is one room in the house

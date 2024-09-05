@@ -154,6 +154,4 @@ public:
 // free functions
 
 bool unitTest();
-void gen1();
-void genL();
 

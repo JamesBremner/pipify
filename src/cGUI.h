@@ -70,9 +70,6 @@ public:
               {50, 50, 1000, 500})
     {
 
-        genL();
-        cRoom::pipeHouse();
-
         menus();
 
         fm.events().draw(

@@ -409,37 +409,6 @@ void cRoom::readfile(const std::string &fname)
     add(wallPoints, doorPoints);
 }
 
-// generate a one room house
-void gen1()
-{
-    std::vector<cxy> wallPoints = {{0, 0}, {10, 0}, {30, 0}, {100, 0}, {100, 100}, {0, 100}};
-    std::vector<int> doorPoints = {1};
-
-    cRoom::clear();
-    cRoom::set(6); // pipe seperation
-    cRoom::add(wallPoints, doorPoints);
-}
-
-// generate a house with one L shaped room
-void genL()
-{
-    std::vector<cxy> wallPoints = {
-        {0, 0},
-        {10, 0},
-        {30, 0},
-        {100, 0},
-        {100, 50},
-        {200, 50},
-        {200, 100},
-        {0, 100},
-    };
-    std::vector<int> doorPoints = {1};
-
-    cRoom::clear();
-    cRoom::set(6); // pipe seperation
-    cRoom::add(wallPoints, doorPoints);
-}
-
 main()
 {
     cGUI theGUI;
