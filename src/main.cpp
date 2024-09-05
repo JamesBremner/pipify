@@ -180,15 +180,32 @@ cRoom::eCorner cRoom::isConcave(int &index) const
 
 void cRoom::pipe()
 {
+    int concaveIndex;
+    switch (isConcave(concaveIndex))
+    {
+    case eCorner::bl_cav:
+    case eCorner::br_cav:
+    case eCorner::tl_cav:
+    case eCorner::tr_cav:
+        pipeConcave(concaveIndex);
+        break;
+
+    case eCorner::error:
+    default:
+        this->pipeConvex();
+        break;
+    }
+}
+void cRoom::pipeConcave(int concaveIndex)
+{
     cxy eWall1, eWallMax, eWall2;
     std::pair<cxy, cxy> oppositeWall;
-    int concaveIndex;
+
     switch (isConcave(concaveIndex))
     {
 
     case eCorner::tr_cav:
     {
-        std::cout << "room is concave\n";
 
         oppositeWall = find(eMargin::bottom);
         eWall1 = myWallPoints[concaveIndex];
@@ -236,8 +253,9 @@ void cRoom::pipe()
                 subRoomWallPoints.push_back(cxy(myWallPoints[ip].x + 10, myWallPoints[ip].y));
                 subRoomDoorPoints.push_back(1);
             }
-            if (myWallPoints[ip] == oppositeWall.first) {
-                //subRoomWallPoints.push_back(myWallPoints[ip]);
+            if (myWallPoints[ip] == oppositeWall.first)
+            {
+                // subRoomWallPoints.push_back(myWallPoints[ip]);
                 subRoomWallPoints.push_back(eWall2);
                 break;
             }
@@ -249,194 +267,218 @@ void cRoom::pipe()
         myPipePoints.insert(myPipePoints.end(), subRoom2.myPipePoints.begin(), subRoom2.myPipePoints.end());
     }
     break;
-
-    case eCorner::error:
-    default:
-        std::cout << "room is convex\n";
-        this->pipeConvex();
-        break;
     }
 }
-
-void cRoom::pipeConvex()
-{
-    int indexDoor2;
-    cxy p1, p2, p3;
-    if (myDoorPoints.size())
+    void cRoom::pipeConvex()
     {
-        // start at the first door
-        cxy d1 = myWallPoints[myDoorPoints[0]];
-        cxy d2 = myWallPoints[myDoorPoints[0] + 1];
-
-        switch (side(d1, d2))
+        int indexDoor2;
+        cxy p1, p2, p3;
+        if (myDoorPoints.size())
         {
-        case eMargin::top:
-            p1.x = d1.x + theSeperation;
-            p1.y = d1.y;
-            p2.x = p1.x;
-            p2.y = p1.y + theSeperation;
-            p3.x = d2.x;
-            p3.y = p2.y;
-            break;
-        }
-        myPipePoints.push_back(p1);
-        myPipePoints.push_back(p2);
-        myPipePoints.push_back(p3);
-        indexDoor2 = myDoorPoints[0] + 1;
-    }
-    else
-    {
-        indexDoor2 = 0;
-    }
+            // start at the first door
+            cxy d1 = myWallPoints[myDoorPoints[0]];
+            cxy d2 = myWallPoints[myDoorPoints[0] + 1];
 
-    // for (int L = 1; L < 5; L++)
-    for (int L = 1; true; L++)
-    {
-        int wallSeperation = L * theSeperation;
-
-        for (int i = indexDoor2 + 1;
-             i < myWallPoints.size();
-             i++)
-        {
-            p1 = myWallPoints[i - 1];
-            p2 = myWallPoints[i];
-            if (i == myWallPoints.size() - 1)
-                p3 = myWallPoints[0];
-            else
-                p3 = myWallPoints[i + 1];
-
-            switch (corner(p1, p2, p3))
+            switch (side(d1, d2))
             {
-            case eCorner::tr_vex:
-                p2.x -= wallSeperation;
-                p2.y += wallSeperation;
+            case eMargin::top:
+                p1.x = d1.x + theSeperation;
+                p1.y = d1.y;
+                p2.x = p1.x;
+                p2.y = p1.y + theSeperation;
+                p3.x = d2.x;
+                p3.y = p2.y;
                 break;
-            case eCorner::br_vex:
-                p2.x -= wallSeperation;
-                p2.y -= wallSeperation;
-                break;
-            case eCorner::bl_vex:
-                p2.x += wallSeperation;
-                p2.y -= wallSeperation;
-                break;
-            case eCorner::tl_vex:
-                p2.x += wallSeperation;
-                p2.y += wallSeperation;
-                break;
-            case eCorner::error:
-                throw std::runtime_error(
-                    " pipe corner error");
+            }
+            myPipePoints.push_back(p1);
+            myPipePoints.push_back(p2);
+            myPipePoints.push_back(p3);
+            indexDoor2 = myDoorPoints[0] + 1;
+        }
+        else
+        {
+            indexDoor2 = 0;
+        }
+
+        // for (int L = 1; L < 5; L++)
+        for (int L = 1; true; L++)
+        {
+            int wallSeperation = L * theSeperation;
+
+            for (int i = indexDoor2 + 1;
+                 i < myWallPoints.size();
+                 i++)
+            {
+                p1 = myWallPoints[i - 1];
+                p2 = myWallPoints[i];
+                if (i == myWallPoints.size() - 1)
+                    p3 = myWallPoints[0];
+                else
+                    p3 = myWallPoints[i + 1];
+
+                switch (corner(p1, p2, p3))
+                {
+                case eCorner::tr_vex:
+                    p2.x -= wallSeperation;
+                    p2.y += wallSeperation;
+                    break;
+                case eCorner::br_vex:
+                    p2.x -= wallSeperation;
+                    p2.y -= wallSeperation;
+                    break;
+                case eCorner::bl_vex:
+                    p2.x += wallSeperation;
+                    p2.y -= wallSeperation;
+                    break;
+                case eCorner::tl_vex:
+                    p2.x += wallSeperation;
+                    p2.y += wallSeperation;
+                    break;
+                case eCorner::error:
+                    throw std::runtime_error(
+                        " pipe corner error");
+                }
+
+                // cross = isPipeCrossing(myPipePoints.back(), p2);
+                // if (cross)
+                //     break;
+
+                // check if spiral has become vanishingly small
+                if (myPipePoints.back().dist2(p2) < theSeperation)
+                    return;
+
+                myPipePoints.push_back(p2);
             }
 
-            // cross = isPipeCrossing(myPipePoints.back(), p2);
             // if (cross)
             //     break;
 
-                    // check if spiral has become vanishingly small
-        if (myPipePoints.back().dist2(p2) < theSeperation)
-            return;
+            // close the polygon
+            p1 = myWallPoints.back();
+            p2 = myWallPoints[0];
+            switch (side(p1, p2))
+            {
+            case eMargin::top:
+                p2.x -= wallSeperation;
+                p2.y += wallSeperation;
+                break;
+            case eMargin::right:
+                p2.x -= wallSeperation;
+                p2.y -= wallSeperation;
+                break;
+            case eMargin::bottom:
+                p2.x += wallSeperation;
+                p2.y -= wallSeperation;
+                break;
+            case eMargin::left:
+                p2.x += wallSeperation;
+                p2.y += wallSeperation + theSeperation;
+                break;
+            }
+
+            // check if spiral has become vanishingly small
+            if (myPipePoints.back().dist2(p2) < theSeperation)
+                break;
 
             myPipePoints.push_back(p2);
         }
-
-        // if (cross)
-        //     break;
-
-        // close the polygon
-        p1 = myWallPoints.back();
-        p2 = myWallPoints[0];
-        switch (side(p1, p2))
-        {
-        case eMargin::top:
-            p2.x -= wallSeperation;
-            p2.y += wallSeperation;
-            break;
-        case eMargin::right:
-            p2.x -= wallSeperation;
-            p2.y -= wallSeperation;
-            break;
-        case eMargin::bottom:
-            p2.x += wallSeperation;
-            p2.y -= wallSeperation;
-            break;
-        case eMargin::left:
-            p2.x += wallSeperation;
-            p2.y += wallSeperation + theSeperation;
-            break;
-        }
-
-        // check if spiral has become vanishingly small
-        if (myPipePoints.back().dist2(p2) < theSeperation)
-            break;
-
-        myPipePoints.push_back(p2);
     }
-}
 
-// generate a one room house
-void gen1()
-{
-    std::vector<cxy> wallPoints = {{0, 0}, {10, 0}, {30, 0}, {100, 0}, {100, 100}, {0, 100}};
-    std::vector<int> doorPoints = {1};
-
-    cRoom::clear();
-    cRoom::set(6); // pipe seperation
-    cRoom::add(wallPoints, doorPoints);
-}
-
-// generate a house with one L shaped room
-void genL()
-{
-    std::vector<cxy> wallPoints = {
-        {0, 0},
-        {10, 0},
-        {30, 0},
-        {100, 0},
-        {100, 50},
-        {200, 50},
-        {200, 100},
-        {0, 100},
-    };
-    std::vector<int> doorPoints = {1};
-
-    cRoom::clear();
-    cRoom::set(6); // pipe seperation
-    cRoom::add(wallPoints, doorPoints);
-}
-
-class cGUI : public cStarterGUI
-{
-public:
-    cGUI()
-        : cStarterGUI(
-              "Pipify",
-              {50, 50, 1000, 500})
+    // generate a one room house
+    void gen1()
     {
+        std::vector<cxy> wallPoints = {{0, 0}, {10, 0}, {30, 0}, {100, 0}, {100, 100}, {0, 100}};
+        std::vector<int> doorPoints = {1};
 
-        genL();
-        cRoom::pipeHouse();
+        cRoom::clear();
+        cRoom::set(6); // pipe seperation
+        cRoom::add(wallPoints, doorPoints);
+    }
 
-        fm.events().draw(
-            [](PAINTSTRUCT &ps)
-            {
-                const int scale = 3;
-                const int off = 20;
-                wex::shapes S(ps);
-                S.color(0);
-                S.penThick(4);
+    // generate a house with one L shaped room
+    void genL()
+    {
+        std::vector<cxy> wallPoints = {
+            {0, 0},
+            {10, 0},
+            {30, 0},
+            {100, 0},
+            {100, 50},
+            {200, 50},
+            {200, 100},
+            {0, 100},
+        };
+        std::vector<int> doorPoints = {1};
 
-                // loop over rooms
-                for (auto &r : cRoom::houseWallSegments())
+        cRoom::clear();
+        cRoom::set(6); // pipe seperation
+        cRoom::add(wallPoints, doorPoints);
+    }
+
+    class cGUI : public cStarterGUI
+    {
+    public:
+        cGUI()
+            : cStarterGUI(
+                  "Pipify",
+                  {50, 50, 1000, 500})
+        {
+
+            genL();
+            cRoom::pipeHouse();
+
+            fm.events().draw(
+                [](PAINTSTRUCT &ps)
                 {
+                    const int scale = 3;
+                    const int off = 20;
+                    wex::shapes S(ps);
+                    S.color(0);
+                    S.penThick(4);
 
-                    // loop over wall segments
-                    for (auto &s : r)
+                    // loop over rooms
+                    for (auto &r : cRoom::houseWallSegments())
+                    {
+
+                        // loop over wall segments
+                        for (auto &s : r)
+                        {
+                            int x1, y1, x2, y2;
+                            x2 = INT_MAX;
+
+                            // loop over points
+                            for (auto &p : s)
+                            {
+                                if (x2 == INT_MAX)
+                                {
+                                    x2 = off + scale * p.x;
+                                    y2 = off + scale * p.y;
+                                }
+                                else
+                                {
+                                    x1 = x2;
+                                    y1 = y2;
+                                    x2 = off + scale * p.x;
+                                    y2 = off + scale * p.y;
+                                    S.line({x1, y1, x2, y2});
+                                }
+                            }
+
+                            // close the polygon
+                            x1 = x2;
+                            y1 = y2;
+                            x2 = off + scale * r[0][0].x;
+                            y2 = off + scale * r[0][0].y;
+                            S.line({x1, y1, x2, y2});
+                        }
+                    }
+
+                    S.penThick(1);
+                    for (auto &r : cRoom::housePipes())
                     {
                         int x1, y1, x2, y2;
                         x2 = INT_MAX;
-
-                        // loop over points
-                        for (auto &p : s)
+                        for (auto &p : r)
                         {
                             if (x2 == INT_MAX)
                             {
@@ -452,55 +494,24 @@ public:
                                 S.line({x1, y1, x2, y2});
                             }
                         }
-
-                        // close the polygon
-                        x1 = x2;
-                        y1 = y2;
-                        x2 = off + scale * r[0][0].x;
-                        y2 = off + scale * r[0][0].y;
-                        S.line({x1, y1, x2, y2});
                     }
-                }
+                });
 
-                S.penThick(1);
-                for (auto &r : cRoom::housePipes())
-                {
-                    int x1, y1, x2, y2;
-                    x2 = INT_MAX;
-                    for (auto &p : r)
-                    {
-                        if (x2 == INT_MAX)
-                        {
-                            x2 = off + scale * p.x;
-                            y2 = off + scale * p.y;
-                        }
-                        else
-                        {
-                            x1 = x2;
-                            y1 = y2;
-                            x2 = off + scale * p.x;
-                            y2 = off + scale * p.y;
-                            S.line({x1, y1, x2, y2});
-                        }
-                    }
-                }
-            });
+            show();
+            run();
+        }
 
-        show();
-        run();
-    }
+    private:
+    };
 
-private:
-};
-
-main()
-{
-    if (!unitTest())
+    main()
     {
-        std::cout << "unit test failed\n";
-        exit(1);
-    }
+        if (!unitTest())
+        {
+            std::cout << "unit test failed\n";
+            exit(1);
+        }
 
-    cGUI theGUI;
-    return 0;
-}
+        cGUI theGUI;
+        return 0;
+    }

@@ -76,10 +76,20 @@ public:
 
     eCorner isConcave( int& index ) const;
 
+    /// @brief find wall segment on a margin
+    /// @param m margin
+    /// @return segment start and end
+
     std::pair<cxy,cxy> find( eMargin m ) const;
 
+    /// @brief layout pipes in a room guaranteed to be convex
 
     void pipeConvex();
+
+    /// @brief layout pipes in a concave room
+    /// @param concaveIndex index of wall point at concave corner
+    
+    void pipeConcave( int concaveIndex );
 
     /// @brief layout pipes in room
 
@@ -93,6 +103,7 @@ public:
 
     /// @brief set the separation between pipes
     /// @param seperation 
+
     static void set(int seperation)
     {
         theSeperation = seperation;
