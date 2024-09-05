@@ -88,7 +88,7 @@ public:
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
-    
+
     void pipeConcave( int concaveIndex );
 
     /// @brief layout pipes in room
@@ -146,6 +146,8 @@ public:
     /// @brief clear rooms from house
     
     static void clear();
+
+    static void readfile( const std::string& fname );
 
 };
 
