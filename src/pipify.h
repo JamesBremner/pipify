@@ -14,12 +14,7 @@ class cRoom
 public:
     cRoom(
         const std::vector<cxy> wallPoints,
-        const std::vector<int> doorPoints)
-    {
-        myWallPoints = wallPoints;
-        myDoorPoints = doorPoints;
-        pipe();
-    }
+        const std::vector<int> doorPoints);
 
     std::vector<std::vector<cxy>> wallSegments();
 
@@ -75,13 +70,36 @@ public:
 
     bool isPipeCrossing( const cxy& p1, const cxy& p2 ) const;
 
-    // layout pipes in room
+    /// @brief Check if room is concave
+    /// @param[out] index if concave, the wallpoint index of the concave corner
+    /// @return concave corner type, or eCorner::error if convex
+
+    eCorner isConcave( int& index ) const;
+
+    std::pair<cxy,cxy> find( eMargin m ) const;
+
+
+    void pipeConvex();
+
+    /// @brief layout pipes in room
+
     void pipe();
 
+    static void pipeHouse()
+    {
+        for (auto &r : theHouse)
+            r.pipe();
+    }
+
+    /// @brief set the separation between pipes
+    /// @param seperation 
     static void set(int seperation)
     {
         theSeperation = seperation;
     }
+
+    /// @brief get pipe locations for the house
+    /// @return locations where pipes turn 90 degrees for each room
 
     static std::vector<std::vector<cxy>> housePipes()
     {
@@ -106,10 +124,16 @@ public:
         return ret;
     }
 
+    /// @brief construct room and add to house
+    /// @param wallPoints 
+    /// @param doorPoints 
+
     static void add(
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
+    /// @brief clear rooms from house
+    
     static void clear();
 
 };
