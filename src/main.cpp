@@ -107,26 +107,26 @@ cRoom::eCorner cRoom::corner(
 
 bool cRoom::isPipeCrossing(const cxy &p1, const cxy &p2) const
 {
-    cxy intersection;
+    // cxy intersection;
 
-    // loop over previous pipe segments
-    for (
-        int i = myPipePoints.size() - 1;
-        i > 0;
-        i--)
-    {
-        // find intersection
-        if (cxy::isIntersection(
-                intersection,
-                p1, p2,
-                myPipePoints[i - 1], myPipePoints[i]))
-        {
-            // check that intersection is not at either end of pipe segment
-            if ((!(intersection == p1)) &&
-                (!(intersection == p2)))
-                return true;
-        }
-    }
+    // // loop over previous pipe segments
+    // for (
+    //     int i = myPipePoints.size() - 1;
+    //     i > 0;
+    //     i--)
+    // {
+    //     // find intersection
+    //     if (cxy::isIntersection(
+    //             intersection,
+    //             p1, p2,
+    //             myPipePoints[i - 1], myPipePoints[i]))
+    //     {
+    //         // check that intersection is not at either end of pipe segment
+    //         if ((!(intersection == p1)) &&
+    //             (!(intersection == p2)))
+    //             return true;
+    //     }
+    // }
     return false;
 }
 
@@ -196,7 +196,7 @@ void cRoom::pipe()
 
     case eCorner::error:
     default:
-        this->pipeConvex();
+        myPipePoints.push_back(this->pipeConvex());
         break;
     }
 }
@@ -243,8 +243,7 @@ void cRoom::pipeConcave(int concaveIndex)
         cRoom subRoom(
             subRoomWallPoints,
             myDoorPoints);
-        subRoom.pipeConvex();
-        myPipePoints = subRoom.myPipePoints;
+        myPipePoints.push_back(subRoom.pipeConvex());
 
         subRoomWallPoints.clear();
         std::vector<int> subRoomDoorPoints;
@@ -267,15 +266,18 @@ void cRoom::pipeConcave(int concaveIndex)
         cRoom subRoom2(
             subRoomWallPoints,
             subRoomDoorPoints);
-        subRoom2.pipeConvex();
-        myPipePoints.insert(myPipePoints.end(), subRoom2.myPipePoints.begin(), subRoom2.myPipePoints.end());
+        myPipePoints.push_back(subRoom2.pipeConvex());
+        
     }
     break;
     }
 }
-void cRoom::pipeConvex()
+std::vector<cxy> cRoom::pipeConvex()
 {
-    int indexDoor2;
+    std::vector<cxy> pipeSegment;
+
+    int startIndex;         // first wall point to run alongside
+
     cxy p1, p2, p3;
     if (myDoorPoints.size())
     {
@@ -294,22 +296,24 @@ void cRoom::pipeConvex()
             p3.y = p2.y;
             break;
         }
-        myPipePoints.push_back(p1);
-        myPipePoints.push_back(p2);
-        myPipePoints.push_back(p3);
-        indexDoor2 = myDoorPoints[0] + 1;
+        pipeSegment.push_back(p1);
+        pipeSegment.push_back(p2);
+        pipeSegment.push_back(p3);
+        startIndex = myDoorPoints[0] + 1;
     }
     else
     {
-        indexDoor2 = 0;
+        startIndex = 0;
+
     }
 
+    // loop over wall points until spiral fills the room
     // for (int L = 1; L < 5; L++)
     for (int L = 1; true; L++)
     {
         int wallSeperation = L * theSeperation;
 
-        for (int i = indexDoor2 + 1;
+        for (int i = startIndex + 1;
              i < myWallPoints.size();
              i++)
         {
@@ -344,10 +348,10 @@ void cRoom::pipeConvex()
             }
 
             // check if spiral has become vanishingly small
-            if (myPipePoints.back().dist2(p2) < theSeperation)
-                return;
+            if (pipeSegment.back().dist2(p2) < theSeperation)
+                return pipeSegment;
 
-            myPipePoints.push_back(p2);
+            pipeSegment.push_back(p2);
         }
 
         // close the polygon
@@ -374,11 +378,12 @@ void cRoom::pipeConvex()
         }
 
         // check if spiral has become vanishingly small
-        if (myPipePoints.back().dist2(p2) < theSeperation)
+        if (pipeSegment.back().dist2(p2) < theSeperation)
             break;
 
-        myPipePoints.push_back(p2);
+        pipeSegment.push_back(p2);
     }
+    return pipeSegment;
 }
 
 void cRoom::readfile(const std::string &fname)

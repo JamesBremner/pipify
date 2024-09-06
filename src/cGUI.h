@@ -121,22 +121,28 @@ public:
                 S.penThick(1);
                 for (auto &r : cRoom::housePipes())
                 {
-                    int x1, y1, x2, y2;
-                    x2 = INT_MAX;
-                    for (auto &p : r)
+                    // loop over pipe segments
+                    for (auto &pipesegment : r)
                     {
-                        if (x2 == INT_MAX)
+                        int x1, y1, x2, y2;
+                        x2 = INT_MAX;
+                        
+                        // loop over pipe bends
+                        for (auto &p : pipesegment)
                         {
-                            x2 = off + scale * p.x;
-                            y2 = off + scale * p.y;
-                        }
-                        else
-                        {
-                            x1 = x2;
-                            y1 = y2;
-                            x2 = off + scale * p.x;
-                            y2 = off + scale * p.y;
-                            S.line({x1, y1, x2, y2});
+                            if (x2 == INT_MAX)
+                            {
+                                x2 = off + scale * p.x;
+                                y2 = off + scale * p.y;
+                            }
+                            else
+                            {
+                                x1 = x2;
+                                y1 = y2;
+                                x2 = off + scale * p.x;
+                                y2 = off + scale * p.y;
+                                S.line({x1, y1, x2, y2});
+                            }
                         }
                     }
                 }

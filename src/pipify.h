@@ -9,7 +9,7 @@ class cRoom
 
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
     std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
-    std::vector<cxy> myPipePoints;
+    std::vector<std::vector<cxy>> myPipePoints;
 
 public:
     cRoom(
@@ -18,7 +18,7 @@ public:
 
     std::vector<std::vector<cxy>> wallSegments();
 
-    std::vector<cxy> pipes()
+    std::vector<std::vector<cxy>> pipes()
     {
         return myPipePoints;
     }
@@ -83,8 +83,9 @@ public:
     std::pair<cxy,cxy> find( eMargin m ) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
+    /// @return vector of pipe bend points
 
-    void pipeConvex();
+    std::vector<cxy> pipeConvex();
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
@@ -111,10 +112,11 @@ public:
 
     /// @brief get pipe locations for the house
     /// @return locations where pipes turn 90 degrees for each room
+    /// room vector, containing segment vector, containing bend points
 
-    static std::vector<std::vector<cxy>> housePipes()
+    static std::vector<std::vector<std::vector<cxy>>> housePipes()
     {
-        std::vector<std::vector<cxy>> ret;
+        std::vector<std::vector<std::vector<cxy>>> ret;
         for (auto &r : theHouse)
         {
             ret.push_back(r.pipes());
