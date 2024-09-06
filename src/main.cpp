@@ -239,7 +239,7 @@ void cRoom::pipeConcave(int concaveIndex)
                 std::cout << "include remaining wallpoints\n";
             }
         }
-        std::cout << "constructing subroom `\n";
+        std::cout << "constructing subroom \n";
         cRoom subRoom(
             subRoomWallPoints,
             myDoorPoints);
@@ -250,15 +250,9 @@ void cRoom::pipeConcave(int concaveIndex)
         for (int ip = concaveIndex; true; ip++)
         {
             subRoomWallPoints.push_back(myWallPoints[ip]);
-            if (ip == concaveIndex)
-            {
-                subRoomWallPoints.push_back(cxy(myWallPoints[ip].x + 5, myWallPoints[ip].y));
-                subRoomWallPoints.push_back(cxy(myWallPoints[ip].x + 10, myWallPoints[ip].y));
-                subRoomDoorPoints.push_back(1);
-            }
+
             if (myWallPoints[ip] == oppositeWall.first)
             {
-                // subRoomWallPoints.push_back(myWallPoints[ip]);
                 subRoomWallPoints.push_back(eWall2);
                 break;
             }
@@ -266,13 +260,16 @@ void cRoom::pipeConcave(int concaveIndex)
         cRoom subRoom2(
             subRoomWallPoints,
             subRoomDoorPoints);
-        myPipePoints.push_back(subRoom2.pipeConvex());
+        cxy startPoint = myWallPoints[concaveIndex];
+        startPoint.x -= theSeperation;
+        startPoint.y += theSeperation;
+        myPipePoints.push_back(subRoom2.pipeConvex( startPoint ));
         
     }
     break;
     }
 }
-std::vector<cxy> cRoom::pipeConvex()
+std::vector<cxy> cRoom::pipeConvex( const cxy& startPoint )
 {
     std::vector<cxy> pipeSegment;
 
@@ -303,6 +300,11 @@ std::vector<cxy> cRoom::pipeConvex()
     }
     else
     {
+        // there is no door
+        // this must be a subroom, part of a concave room
+        // start at nearest pipe in first subroom
+
+        pipeSegment.push_back(startPoint);
         startIndex = 0;
 
     }

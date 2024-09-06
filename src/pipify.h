@@ -83,9 +83,13 @@ public:
     std::pair<cxy,cxy> find( eMargin m ) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
+    /// @param startPoint
     /// @return vector of pipe bend points
+    /// for a convex room, the startPoint can be ignored
+    /// for any subroom, except the first, 
+    ///         startPoint should be the nearest pipe point in first subroom
 
-    std::vector<cxy> pipeConvex();
+    std::vector<cxy> pipeConvex( const cxy& startPoint = cxy() );
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
