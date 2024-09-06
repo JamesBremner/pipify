@@ -19,7 +19,10 @@ which when rendered gives
 
 ## Pipe layout in a convex room
 
-![image](https://github.com/user-attachments/assets/91cb9fca-23b7-4e03-9c8e-e993578b6880)
+Shows return pipe explicitly.
+
+![image](https://github.com/user-attachments/assets/2283ea12-8069-4db4-a125-69d728f4b769)
+
 
 ## Pipe layout in a L-shaped room
 
