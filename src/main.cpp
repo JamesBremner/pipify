@@ -7,7 +7,6 @@
 #include <wex.h>
 #include <cxy.h>
 
-
 #include "pipify.h"
 
 #include "cGUI.h"
@@ -40,8 +39,8 @@ std::vector<std::vector<cxy>> cRoom::wallSegments()
 {
     std::vector<std::vector<cxy>> ret;
     std::vector<cxy> segment;
-    int idp =INT_MAX;
-    if( myDoorPoints.size())
+    int idp = INT_MAX;
+    if (myDoorPoints.size())
         idp = myDoorPoints[0];
     for (int idw = 0; idw < myWallPoints.size(); idw++)
     {
@@ -263,17 +262,16 @@ void cRoom::pipeConcave(int concaveIndex)
         cxy startPoint = myWallPoints[concaveIndex];
         startPoint.x -= theSeperation;
         startPoint.y += theSeperation;
-        myPipePoints.push_back(subRoom2.pipeConvex( startPoint ));
-        
+        myPipePoints.push_back(subRoom2.pipeConvex(startPoint));
     }
     break;
     }
 }
-std::vector<cxy> cRoom::pipeConvex( const cxy& startPoint )
+std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
 {
     std::vector<cxy> pipeSegment;
 
-    int startIndex;         // first wall point to run alongside
+    int startIndex; // first wall point to run alongside
 
     cxy p1, p2, p3;
     if (myDoorPoints.size())
@@ -306,7 +304,6 @@ std::vector<cxy> cRoom::pipeConvex( const cxy& startPoint )
 
         pipeSegment.push_back(startPoint);
         startIndex = 0;
-
     }
 
     // loop over wall points until spiral fills the room
@@ -414,6 +411,51 @@ void cRoom::readfile(const std::string &fname)
     clear();
     set(6); // pipe seperation
     add(wallPoints, doorPoints);
+}
+
+void cGUI::drawPipeSegment(
+    wex::shapes &S,
+    const std::vector<cxy> &pipesegment)
+{
+    const int outInSep = cRoom::seperation();
+    int x1, y1, x2, y2, x3, y3, x4, y4;
+    x2 = INT_MAX;
+
+    // loop over pipe bends
+    for (int ip = 0; ip < pipesegment.size(); ip++)
+    {
+        cxy p = pipesegment[ip];
+
+        if (x2 == INT_MAX)
+        {
+            x2 = off + scale * p.x;
+            y2 = off + scale * p.y;
+        }
+        else
+        {
+            x1 = x2;
+            y1 = y2;
+            x2 = off + (int)(scale * p.x);
+            y2 = off + (int)(scale * p.y);
+            S.line({x1, y1, x2, y2});
+
+            switch (cRoom::corner(pipesegment[ip - 1], p, pipesegment[ip + 1]))
+            {
+            case cRoom::eCorner::tl_vex:
+                S.line({x1 + outInSep, y1 - outInSep, x2 + outInSep, y2 + outInSep});
+                break;
+            case cRoom::eCorner::tr_vex:
+                S.line({x1 + outInSep, y1 + outInSep, x2 - outInSep, y2 + outInSep});
+                break;
+            case cRoom::eCorner::br_vex:
+                S.line({x1 - outInSep, y1 + outInSep, x2 - outInSep, y2 - outInSep});
+                break;
+            case cRoom::eCorner::bl_vex:
+                S.line({x1 - outInSep, y1 - outInSep, x2 + outInSep, y2 - outInSep});
+                break;
+            }
+        }
+    }
 }
 
 main()

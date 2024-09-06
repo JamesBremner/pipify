@@ -113,6 +113,10 @@ public:
     {
         theSeperation = seperation;
     }
+    static int seperation()
+    {
+        return theSeperation;
+    }
 
     /// @brief get pipe locations for the house
     /// @return locations where pipes turn 90 degrees for each room

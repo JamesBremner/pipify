@@ -73,10 +73,8 @@ public:
         menus();
 
         fm.events().draw(
-            [](PAINTSTRUCT &ps)
+            [this](PAINTSTRUCT &ps)
             {
-                const int scale = 3;
-                const int off = 20;
                 wex::shapes S(ps);
                 S.color(0);
                 S.penThick(4);
@@ -124,26 +122,7 @@ public:
                     // loop over pipe segments
                     for (auto &pipesegment : r)
                     {
-                        int x1, y1, x2, y2;
-                        x2 = INT_MAX;
-                        
-                        // loop over pipe bends
-                        for (auto &p : pipesegment)
-                        {
-                            if (x2 == INT_MAX)
-                            {
-                                x2 = off + scale * p.x;
-                                y2 = off + scale * p.y;
-                            }
-                            else
-                            {
-                                x1 = x2;
-                                y1 = y2;
-                                x2 = off + scale * p.x;
-                                y2 = off + scale * p.y;
-                                S.line({x1, y1, x2, y2});
-                            }
-                        }
+                        drawPipeSegment(S, pipesegment);
                     }
                 }
             });
@@ -153,6 +132,9 @@ public:
     }
 
 private:
+    const int scale = 3;
+    const int off = 20;
+
     void menus()
     {
         wex::menubar mb(fm);
@@ -195,4 +177,9 @@ private:
 
         mb.append("File", mf);
     }
+
+    void drawPipeSegment(
+        wex::shapes &S,
+        const std::vector<cxy> &pipesegment);
+
 };
