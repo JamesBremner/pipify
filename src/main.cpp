@@ -347,7 +347,7 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
             }
 
             // check if spiral has become vanishingly small
-            if (pipeSegment.back().dist2(p2) < theSeperation)
+            if (pipeSegment.back().dist2(p2) < 2 * theSeperation)
                 return pipeSegment;
 
             pipeSegment.push_back(p2);
@@ -377,7 +377,7 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
         }
 
         // check if spiral has become vanishingly small
-        if (pipeSegment.back().dist2(p2) < theSeperation)
+        if (pipeSegment.back().dist2(p2) < 2 * theSeperation)
             break;
 
         pipeSegment.push_back(p2);
@@ -417,19 +417,28 @@ void cGUI::drawPipeSegment(
     wex::shapes &S,
     const std::vector<cxy> &pipesegment)
 {
-    const int outInSep = cRoom::seperation();
+    const int outInSep = cRoom::seperation() + 2;
     int x1, y1, x2, y2, x3, y3, x4, y4;
     x2 = INT_MAX;
+    cxy lastReturn;
 
     // loop over pipe bends
-    for (int ip = 0; ip < pipesegment.size(); ip++)
+    for (int ip = 0; ip < pipesegment.size() - 1; ip++)
     {
         cxy p = pipesegment[ip];
 
         if (x2 == INT_MAX)
         {
-            x2 = off + scale * p.x;
-            y2 = off + scale * p.y;
+            // draw return pipe from doorway to start of spiral
+            x1 = off + scale * p.x;
+            y1 = off + scale * p.y;
+            x2 = off + scale * pipesegment[1].x - outInSep;
+            y2 = off + scale * pipesegment[1].y + outInSep;
+            S.line({x1 - outInSep, y1,
+                    x2, y2});
+            S.line({x2, y2, x2 + outInSep, y2});
+            x2 = x1;
+            y2 = y1;
         }
         else
         {
@@ -439,23 +448,41 @@ void cGUI::drawPipeSegment(
             y2 = off + (int)(scale * p.y);
             S.line({x1, y1, x2, y2});
 
+            // draw return pipe
             switch (cRoom::corner(pipesegment[ip - 1], p, pipesegment[ip + 1]))
             {
             case cRoom::eCorner::tl_vex:
+                lastReturn = cxy(x2 + outInSep, y2 + outInSep);
                 S.line({x1 + outInSep, y1 - outInSep, x2 + outInSep, y2 + outInSep});
                 break;
             case cRoom::eCorner::tr_vex:
+                lastReturn = cxy(x2 - outInSep, y2 + outInSep);
                 S.line({x1 + outInSep, y1 + outInSep, x2 - outInSep, y2 + outInSep});
                 break;
             case cRoom::eCorner::br_vex:
+                lastReturn = cxy(x2 - outInSep, y2 - outInSep);
                 S.line({x1 - outInSep, y1 + outInSep, x2 - outInSep, y2 - outInSep});
                 break;
             case cRoom::eCorner::bl_vex:
+                lastReturn = cxy(x2 + outInSep, y2 - outInSep);
                 S.line({x1 - outInSep, y1 - outInSep, x2 + outInSep, y2 - outInSep});
+                break;
+            case cRoom::eCorner::error:
+                if (p.y == pipesegment[ip - 1].y)
+                {
+                    S.line({x1, y1 + outInSep, x2 + outInSep, y2 + outInSep});
+                }
                 break;
             }
         }
     }
+    // connect spiral centers
+    int lastbendindex = pipesegment.size() - 2;
+    x1 = off + scale * pipesegment[lastbendindex].x;
+    y1 = off + scale * pipesegment[lastbendindex].y;
+    x2 = lastReturn.x;
+    y2 = lastReturn.y;
+    S.line({x1, y1, x2, y2});
 }
 
 main()
