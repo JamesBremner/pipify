@@ -23,7 +23,8 @@ which when rendered gives
 
 ## Pipe layout in a L-shaped room
 
-![image](https://github.com/user-attachments/assets/441fc5f4-7faf-4f56-bfae-093d179ca9b9)
+![image](https://github.com/user-attachments/assets/0406efd6-f7a7-4ecc-92ba-5bfb3addaf33)
+
 
 
 
