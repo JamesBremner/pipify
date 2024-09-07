@@ -181,6 +181,47 @@ cRoom::eCorner cRoom::isConcave(int &index) const
     return eCorner::error;
 }
 
+void cRoom::pipeDoor(std::vector<cxy> &pipeSegment)
+{
+    cxy p1, p2, p3;
+
+    // start at the first door
+    cxy d1 = myWallPoints[myDoorPoints[0]];
+    cxy d2 = myWallPoints[myDoorPoints[0] + 1];
+
+    // switch on side where door is placed
+    switch (side(d1, d2))
+    {
+    case eMargin::top:
+        p1.x = d1.x + theSeperation;
+        p1.y = d1.y;
+        p2.x = p1.x;
+        p2.y = p1.y + theSeperation;
+        p3.x = d2.x;
+        p3.y = p2.y;
+        break;
+    case eMargin::right:
+        p1.x = d1.x;
+        p1.y = d1.y + theSeperation;
+        p2.x = d1.x - theSeperation;
+        p2.y = p1.y;
+        p3.x = p2.x;
+        p3.y = d2.y;
+        break;
+    case eMargin::bottom:
+        p1.x = d1.x + theSeperation;
+        p1.y = d1.y;
+        p2.x = p1.x;
+        p2.y = p1.y - theSeperation;
+        p3.x = p2.x;
+        p3.y = p2.y;
+        break;
+    }
+    pipeSegment.push_back(p1);
+    pipeSegment.push_back(p2);
+    pipeSegment.push_back(p3);
+}
+
 void cRoom::pipe()
 {
     int concaveIndex;
@@ -276,24 +317,7 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
     cxy p1, p2, p3;
     if (myDoorPoints.size())
     {
-        // start at the first door
-        cxy d1 = myWallPoints[myDoorPoints[0]];
-        cxy d2 = myWallPoints[myDoorPoints[0] + 1];
-
-        switch (side(d1, d2))
-        {
-        case eMargin::top:
-            p1.x = d1.x + theSeperation;
-            p1.y = d1.y;
-            p2.x = p1.x;
-            p2.y = p1.y + theSeperation;
-            p3.x = d2.x;
-            p3.y = p2.y;
-            break;
-        }
-        pipeSegment.push_back(p1);
-        pipeSegment.push_back(p2);
-        pipeSegment.push_back(p3);
+        pipeDoor(pipeSegment);
         startIndex = myDoorPoints[0] + 1;
     }
     else

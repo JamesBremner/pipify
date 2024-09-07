@@ -96,6 +96,11 @@ public:
 
     void pipeConcave( int concaveIndex );
 
+    /// @brief layout pipes in a doorway
+    /// @param pipeSegment segment pipes added to
+
+    void pipeDoor(std::vector<cxy>& pipeSegment);
+
     /// @brief layout pipes in room
 
     void pipe();
