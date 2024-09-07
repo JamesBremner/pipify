@@ -16,8 +16,10 @@ std::vector<cRoom> cRoom::theHouse;
 int cRoom::theSeperation;
 
 cRoom::cRoom(
+    const std::string &name,
     const std::vector<cxy> wallPoints,
     const std::vector<int> doorPoints)
+    : myName(name)
 {
     myWallPoints = wallPoints;
     myDoorPoints = doorPoints;
@@ -25,10 +27,11 @@ cRoom::cRoom(
 }
 
 void cRoom::add(
+    const std::string &name,
     const std::vector<cxy> wallPoints,
     const std::vector<int> doorPoints)
 {
-    theHouse.emplace_back(wallPoints, doorPoints);
+    theHouse.emplace_back(name, wallPoints, doorPoints);
 }
 void cRoom::clear()
 {
@@ -281,6 +284,7 @@ void cRoom::pipeConcave(int concaveIndex)
         }
         std::cout << "constructing subroom \n";
         cRoom subRoom(
+            "",
             subRoomWallPoints,
             myDoorPoints);
         myPipePoints.push_back(subRoom.pipeConvex());
@@ -298,6 +302,7 @@ void cRoom::pipeConcave(int concaveIndex)
             }
         }
         cRoom subRoom2(
+            "",
             subRoomWallPoints,
             subRoomDoorPoints);
         cxy startPoint = myWallPoints[concaveIndex];
@@ -310,14 +315,14 @@ void cRoom::pipeConcave(int concaveIndex)
 }
 std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
 {
-    std::vector<cxy> pipeSegment;
+    std::vector<cxy> spiral;
 
     int startIndex; // first wall point to run alongside
 
     cxy p1, p2, p3;
     if (myDoorPoints.size())
     {
-        pipeDoor(pipeSegment);
+        pipeDoor(spiral);
         startIndex = myDoorPoints[0] + 1;
     }
     else
@@ -326,7 +331,7 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
         // this must be a subroom, part of a concave room
         // start at nearest pipe in first subroom
 
-        pipeSegment.push_back(startPoint);
+        spiral.push_back(startPoint);
         startIndex = 0;
     }
 
@@ -371,10 +376,10 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
             }
 
             // check if spiral has become vanishingly small
-            if (pipeSegment.back().dist2(p2) < 2 * theSeperation)
-                return pipeSegment;
+            if (isSpiralComplete(spiral, p2))
+                return spiral;
 
-            pipeSegment.push_back(p2);
+            spiral.push_back(p2);
         }
 
         // close the polygon
@@ -401,12 +406,22 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
         }
 
         // check if spiral has become vanishingly small
-        if (pipeSegment.back().dist2(p2) < 2 * theSeperation)
+        if (isSpiralComplete(spiral, p2))
             break;
 
-        pipeSegment.push_back(p2);
+        spiral.push_back(p2);
     }
-    return pipeSegment;
+    return spiral;
+}
+
+bool cRoom::isSpiralComplete(
+    const std::vector<cxy> &spiral,
+    const cxy &nextbend) const
+{
+    double d2 = spiral.back().dist2(nextbend);
+    if (d2 < 2 * theSeperation)
+        return true;
+    return false;
 }
 
 void cRoom::readfile(const std::string &fname)
@@ -416,12 +431,35 @@ void cRoom::readfile(const std::string &fname)
         throw std::runtime_error(
             "Cannot open file " + fname);
 
-    std::string line;
+    std::string line, name;
     std::vector<cxy> wallPoints;
     std::vector<int> doorPoints;
+
+    clear();
+
     while (getline(ifs, line))
     {
-        int p = line.find(" ");
+        if( ! line.length())
+            continue;
+        int p = line.find("room");
+        if (p != -1)
+        {
+            // new room specified
+
+            if (wallPoints.size())
+            {
+                // save previous room
+                add(name, wallPoints, doorPoints);
+            }
+
+            // clear new room specs
+            wallPoints.clear();
+            doorPoints.clear();
+            name = line.substr(5);
+            continue;
+        }
+
+        p = line.find(" ");
         if (p != -1)
         {
             wallPoints.emplace_back(
@@ -432,9 +470,11 @@ void cRoom::readfile(const std::string &fname)
             doorPoints.push_back(atoi(line.c_str()));
         }
     }
-    clear();
+
+    // save last room
+    add(name, wallPoints, doorPoints);
+
     set(6); // pipe seperation
-    add(wallPoints, doorPoints);
 }
 
 void cGUI::drawPipeSegment(

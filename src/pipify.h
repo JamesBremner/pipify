@@ -7,12 +7,14 @@ class cRoom
     static std::vector<cRoom> theHouse; // the house composed of rooms
     static int theSeperation;
 
+    std::string myName;
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
     std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
     std::vector<std::vector<cxy>> myPipePoints;
 
 public:
     cRoom(
+        const std::string& name,
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
@@ -107,8 +109,11 @@ public:
 
     static void pipeHouse()
     {
-        for (auto &r : theHouse)
+        for (auto &r : theHouse) {
+            std::cout << "calculating pipe layout for room "
+                << r.myName << "\n";
             r.pipe();
+        }
     }
 
     /// @brief set the separation between pipes
@@ -151,10 +156,12 @@ public:
     }
 
     /// @brief construct room and add to house
+    /// @param name
     /// @param wallPoints 
     /// @param doorPoints 
 
     static void add(
+        const std::string& name,
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
@@ -164,6 +171,10 @@ public:
 
     static void readfile( const std::string& fname );
 
+private:
+    bool isSpiralComplete(
+        const std::vector<cxy>& spiral,
+        const cxy& nextbend    ) const;
 };
 
 // free functions
