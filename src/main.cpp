@@ -196,6 +196,7 @@ void cRoom::pipeDoor(std::vector<cxy> &pipeSegment)
     // start at the first door
     cxy d1 = myWallPoints[myDoorPoints[0]];
     cxy d2 = myWallPoints[myDoorPoints[0] + 1];
+    double doorWidth = sqrt(d1.dist2(d2));
 
     // switch on side where door is placed
     switch (side(d1, d2))
@@ -210,8 +211,8 @@ void cRoom::pipeDoor(std::vector<cxy> &pipeSegment)
         break;
     case eMargin::right:
         p1.x = d1.x;
-        p1.y = d1.y + theSeperation;
-        p2.x = d1.x - theSeperation;
+        p1.y = d1.y + 2 * theSeperation;
+        p2.x = p1.x - theSeperation;
         p2.y = p1.y;
         p3.x = p2.x;
         p3.y = d2.y;
@@ -521,23 +522,53 @@ void cGUI::drawPipeSegment(
     x2 = INT_MAX;
     cxy lastReturn;
 
+    // draw in doorway pipe
+    x1 = off + scale * pipesegment[0].x;
+    y1 = off + scale * pipesegment[0].y;
+    x2 = off + scale * pipesegment[1].x;
+    y2 = off + scale * pipesegment[1].y;
+    x3 = off + scale * pipesegment[2].x;
+    y3 = off + scale * pipesegment[2].y;
+    S.color(0x0000FF);
+    S.line({x1, y1, x2, y2});
+    S.line({x2, y2, x3, y3});
+    S.color(0);
+
+    // draw out doorway pipe
+    int sep = cRoom::seperation();
+    switch (
+        cRoom::side(pipesegment[1], pipesegment[2]))
+    {
+    case cRoom::eMargin::top:
+        x1 -= sep;
+        x2 -= sep;
+        y2 += sep;
+        x3 += sep + 1;
+        y3 += sep;
+        break;
+    case cRoom::eMargin::right:
+        y1 -= sep;
+        x2 -= sep;
+        y2 -= sep;
+        x3 -= sep;
+        y3 += sep + 1;
+        break;
+    }
+    S.color(0xFF0000);
+    S.line({x1, y1, x2, y2});
+    S.line({x2, y2, x3, y3});
+    S.color(0);
+
+
     // loop over pipe bends
-    for (int ip = 0; ip < pipesegment.size() - 1; ip++)
+    for (int ip = 2; ip < pipesegment.size() - 1; ip++)
     {
         cxy p = pipesegment[ip];
 
-        if (x2 == INT_MAX)
+        if (ip == 2)
         {
-            // draw return pipe from doorway to start of spiral
-            x1 = off + scale * p.x;
-            y1 = off + scale * p.y;
-            x2 = off + scale * pipesegment[1].x - outInSep;
-            y2 = off + scale * pipesegment[1].y + outInSep;
-            S.line({x1 - outInSep, y1,
-                    x2, y2});
-            S.line({x2, y2, x2 + outInSep, y2});
-            x2 = x1;
-            y2 = y1;
+            x2 = off + scale * p.x;
+            y2 = off + scale * p.y;
         }
         else
         {
@@ -545,7 +576,9 @@ void cGUI::drawPipeSegment(
             y1 = y2;
             x2 = off + (int)(scale * p.x);
             y2 = off + (int)(scale * p.y);
+            S.color(0x0000FF);
             S.line({x1, y1, x2, y2});
+            S.color(0);
 
             // draw return pipe
             switch (cRoom::corner(pipesegment[ip - 1], p, pipesegment[ip + 1]))
