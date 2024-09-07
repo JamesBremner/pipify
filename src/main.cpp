@@ -544,7 +544,7 @@ void cGUI::drawPipeSegment(
         x2 -= sep;
         y2 += sep;
         x3 += sep + 1;
-        y3 += sep;
+        y3 += sep + 1;
         break;
     case cRoom::eMargin::right:
         y1 -= sep;
@@ -558,7 +558,6 @@ void cGUI::drawPipeSegment(
     S.line({x1, y1, x2, y2});
     S.line({x2, y2, x3, y3});
     S.color(0);
-
 
     // loop over pipe bends
     for (int ip = 2; ip < pipesegment.size() - 1; ip++)
@@ -581,23 +580,32 @@ void cGUI::drawPipeSegment(
             S.color(0);
 
             // draw return pipe
+            int rx1, ry1, rx2, ry2;
             switch (cRoom::corner(pipesegment[ip - 1], p, pipesegment[ip + 1]))
             {
             case cRoom::eCorner::tl_vex:
-                lastReturn = cxy(x2 + outInSep, y2 + outInSep);
-                S.line({x1 + outInSep, y1 - outInSep, x2 + outInSep, y2 + outInSep});
+                rx1 = x1 + outInSep;
+                ry1 = y1 - outInSep;
+                rx2 = x2 + outInSep;
+                ry2 = y2 + outInSep;
                 break;
             case cRoom::eCorner::tr_vex:
-                lastReturn = cxy(x2 - outInSep, y2 + outInSep);
-                S.line({x1 + outInSep, y1 + outInSep, x2 - outInSep, y2 + outInSep});
+                rx1 = x1 + outInSep;
+                ry1 = y1 + outInSep;
+                rx2 = x2 - outInSep;
+                ry2 = y2 + outInSep;
                 break;
             case cRoom::eCorner::br_vex:
-                lastReturn = cxy(x2 - outInSep, y2 - outInSep);
-                S.line({x1 - outInSep, y1 + outInSep, x2 - outInSep, y2 - outInSep});
+                rx1 = x1 - outInSep;
+                ry1 = y1 + outInSep;
+                rx2 = x2 - outInSep;
+                ry2 = y2 - outInSep;
                 break;
             case cRoom::eCorner::bl_vex:
-                lastReturn = cxy(x2 + outInSep, y2 - outInSep);
-                S.line({x1 - outInSep, y1 - outInSep, x2 + outInSep, y2 - outInSep});
+                rx1 = x1 - outInSep;
+                ry1 = y1 - outInSep;
+                rx2 = x2 + outInSep;
+                ry2 = y2 - outInSep;
                 break;
             case cRoom::eCorner::error:
                 if (p.y == pipesegment[ip - 1].y)
@@ -606,6 +614,10 @@ void cGUI::drawPipeSegment(
                 }
                 break;
             }
+            lastReturn = cxy(rx2, ry2);
+            S.color(0xFF0000);
+            S.line({rx1, ry1, rx2, ry2});
+            S.color(0);
         }
     }
     // connect spiral centers
