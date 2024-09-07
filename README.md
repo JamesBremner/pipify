@@ -19,9 +19,9 @@ which when rendered gives
 
 ## Pipe layout in a convex room
 
-Shows return pipe explicitly.
+Shows return pipe in blue.
 
-![image](https://github.com/user-attachments/assets/2283ea12-8069-4db4-a125-69d728f4b769)
+![image](https://github.com/user-attachments/assets/3fa3fcf3-faa0-4acc-b7ea-fa872df0b8ba)
 
 
 ## Pipe layout in a L-shaped room
