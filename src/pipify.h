@@ -18,6 +18,8 @@ public:
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
+    /// @brief get the wall segments, ready to draw the room wall
+    /// @return 
     std::vector<std::vector<cxy>> wallSegments();
 
     std::vector<std::vector<cxy>> pipes()
@@ -99,9 +101,9 @@ public:
     void pipeConcave( int concaveIndex );
 
     /// @brief layout pipes in a doorway
-    /// @param pipeSegment segment pipes added to
+    /// @param spiral pipes added to
 
-    void pipeDoor(std::vector<cxy>& pipeSegment);
+    void pipeDoor(std::vector<cxy>& spiral);
 
     /// @brief layout pipes in room
 

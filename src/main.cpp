@@ -60,6 +60,11 @@ std::vector<std::vector<cxy>> cRoom::wallSegments()
                 idp = myWallPoints.size() + 10;
             }
         }
+        if (idw == myWallPoints.size() - 1)
+        {
+            // wall that closes the polygon
+            segment.push_back(myWallPoints[0]);
+        }
     }
     if (segment.size())
         ret.push_back(segment);
@@ -439,7 +444,7 @@ void cRoom::readfile(const std::string &fname)
 
     while (getline(ifs, line))
     {
-        if( ! line.length())
+        if (!line.length())
             continue;
         int p = line.find("room");
         if (p != -1)
@@ -475,6 +480,36 @@ void cRoom::readfile(const std::string &fname)
     add(name, wallPoints, doorPoints);
 
     set(6); // pipe seperation
+}
+
+void cGUI::drawWalls(
+    wex::shapes &S,
+    const std::vector<std::vector<cxy>> &walls)
+{
+    // loop over wall segments
+    for (auto &s : walls)
+    {
+        int x1, y1, x2, y2;
+        x2 = INT_MAX;
+
+        // loop over points
+        for (auto &p : s)
+        {
+            if (x2 == INT_MAX)
+            {
+                x2 = off + scale * p.x;
+                y2 = off + scale * p.y;
+            }
+            else
+            {
+                x1 = x2;
+                y1 = y2;
+                x2 = off + scale * p.x;
+                y2 = off + scale * p.y;
+                S.line({x1, y1, x2, y2});
+            }
+        }
+    }
 }
 
 void cGUI::drawPipeSegment(

@@ -82,38 +82,7 @@ public:
                 // loop over rooms
                 for (auto &r : cRoom::houseWallSegments())
                 {
-
-                    // loop over wall segments
-                    for (auto &s : r)
-                    {
-                        int x1, y1, x2, y2;
-                        x2 = INT_MAX;
-
-                        // loop over points
-                        for (auto &p : s)
-                        {
-                            if (x2 == INT_MAX)
-                            {
-                                x2 = off + scale * p.x;
-                                y2 = off + scale * p.y;
-                            }
-                            else
-                            {
-                                x1 = x2;
-                                y1 = y2;
-                                x2 = off + scale * p.x;
-                                y2 = off + scale * p.y;
-                                S.line({x1, y1, x2, y2});
-                            }
-                        }
-
-                        // close the polygon
-                        x1 = x2;
-                        y1 = y2;
-                        x2 = off + scale * r[0][0].x;
-                        y2 = off + scale * r[0][0].y;
-                        S.line({x1, y1, x2, y2});
-                    }
+                    drawWalls( S, r );
                 }
 
                 S.penThick(1);
@@ -181,5 +150,9 @@ private:
     void drawPipeSegment(
         wex::shapes &S,
         const std::vector<cxy> &pipesegment);
+
+    void drawWalls(
+        wex::shapes &S,
+        const std::vector<std::vector<cxy>>& walls    );
 
 };
