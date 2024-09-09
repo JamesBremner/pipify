@@ -23,9 +23,13 @@ public:
     /// @return 
     std::vector<std::vector<cxy>> wallSegments();
 
-    std::vector<std::vector<cxy>> pipes()
+    std::vector<std::vector<cxy>> pipes() const
     {
         return myPipePoints;
+    }
+    int doorCount() const
+    {
+        return myDoorPoints.size();
     }
 
     enum class eMargin

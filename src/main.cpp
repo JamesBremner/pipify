@@ -11,9 +11,13 @@
 
 #include "cGUI.h"
 
+// define static attributes
+
 std::vector<cRoom> cRoom::theHouse;
 
 int cRoom::theSeperation;
+
+int cRoom::furnaceRoomIndex;
 
 cRoom::cRoom(
     const std::string &name,
@@ -524,6 +528,12 @@ void cRoom::readfile(const std::string &fname)
     });
     if( it == theHouse.end())
         throw std::runtime_error("Unspecified furnace room " + name );
+    furnaceRoomIndex = it - theHouse.begin();
+
+    // check that there are enough doors in the furnace room
+    // to reach every other room
+    if( theHouse.size()-1 > theHouse[furnaceRoomIndex].doorCount() )
+        throw std::runtime_error( "Not enough doors in furnace room");
 
     //TODO: check every room connected directly to furnace room TID3
  }
