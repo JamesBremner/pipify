@@ -42,22 +42,22 @@ std::vector<std::vector<cxy>> cRoom::wallSegments()
 {
     std::vector<std::vector<cxy>> ret;
     std::vector<cxy> segment;
-    int idp = INT_MAX;
+    int doorIndex = INT_MAX;
     if (myDoorPoints.size())
-        idp = myDoorPoints[0];
+        doorIndex = 0;
     for (int idw = 0; idw < myWallPoints.size(); idw++)
     {
         segment.push_back(myWallPoints[idw]);
-        if (idw == idp)
+        if (idw == myDoorPoints[doorIndex])
         {
             // door point
             ret.push_back(segment);
             segment.clear();
-            idp++;
-            if (idp > myDoorPoints.size())
+            doorIndex++;
+            if (doorIndex > myDoorPoints.size())
             {
                 // found all the doors
-                idp = myWallPoints.size() + 10;
+                doorIndex = myWallPoints.size() + 10;
             }
         }
         if (idw == myWallPoints.size() - 1)
@@ -338,6 +338,8 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
     {
         pipeDoor(spiral);
         startIndex = myDoorPoints[0] + 1;
+        if( startIndex == myWallPoints.size()-1)
+            startIndex = 1;
     }
     else
     {
@@ -385,8 +387,16 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
                 p2.y += wallSeperation;
                 break;
             case eCorner::error:
-                throw std::runtime_error(
-                    " pipe corner error");
+                // throw std::runtime_error(
+                //     " pipe corner error");
+                switch( cRoom::side(p1,p2) ) {
+                    case cRoom::eMargin::left:
+                        p2.x  += wallSeperation;
+                        break;
+                    default:
+                        throw std::runtime_error("NYI");
+                }
+                break;
             }
 
             // check if spiral has become vanishingly small
@@ -455,6 +465,9 @@ void cRoom::readfile(const std::string &fname)
     {
         if (!line.length())
             continue;
+        if( line.find("//") == 0 ) 
+            break;
+
         int p = line.find("room");
         if (p != -1)
         {
@@ -560,6 +573,12 @@ void cGUI::drawPipeSegment(
         y2 -= sep;
         x3 -= sep;
         y3 += sep + 1;
+        break;
+    case cRoom::eMargin::bottom:
+        x1 += sep;
+        x2 += sep;
+        y2 -= 2 * sep;
+        y3 -= 2 * sep;
         break;
     }
     S.color(0xFF0000);
