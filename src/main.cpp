@@ -455,7 +455,7 @@ void cRoom::readfile(const std::string &fname)
         throw std::runtime_error(
             "Cannot open file " + fname);
 
-    std::string line, name;
+    std::string line, name, furnaceRoomName;
     std::vector<cxy> wallPoints;
     std::vector<int> doorPoints;
 
@@ -469,7 +469,7 @@ void cRoom::readfile(const std::string &fname)
             break;
 
         int p = line.find("room");
-        if (p != -1)
+        if (p == 0)
         {
             // new room specified
 
@@ -483,6 +483,13 @@ void cRoom::readfile(const std::string &fname)
             wallPoints.clear();
             doorPoints.clear();
             name = line.substr(5);
+            continue;
+        }
+
+        p = line.find("furnace");
+        if( p == 0 ) {
+            p = line.find(" ");
+            furnaceRoomName = line.substr(p+1 );
             continue;
         }
 
@@ -502,7 +509,24 @@ void cRoom::readfile(const std::string &fname)
     add(name, wallPoints, doorPoints);
 
     set(6); // pipe seperation
+
+    furnaceRoom( furnaceRoomName);
 }
+
+ void cRoom::furnaceRoom( const std::string& name )
+ {
+    if( ! name.length() )
+        throw std::runtime_error("Unspecified furnace room");
+    auto it = std::find_if( theHouse.begin(), theHouse.end(),
+    [&](cRoom& room ) -> bool
+    { 
+        return (room.myName == name);
+    });
+    if( it == theHouse.end())
+        throw std::runtime_error("Unspecified furnace room " + name );
+
+    //TODO: check every room connected directly to furnace room TID3
+ }
 
 void cGUI::drawWalls(
     wex::shapes &S,

@@ -6,6 +6,7 @@ class cRoom
 
     static std::vector<cRoom> theHouse; // the house composed of rooms
     static int theSeperation;
+    static int furnaceRoomIndex;
 
     std::string myName;
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
@@ -129,6 +130,8 @@ public:
     {
         return theSeperation;
     }
+
+    static void furnaceRoom( const std::string& name );
 
     /// @brief get pipe locations for the house
     /// @return locations where pipes turn 90 degrees for each room
