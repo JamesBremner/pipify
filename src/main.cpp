@@ -17,7 +17,7 @@ std::vector<cRoom> cRoom::theHouse;
 
 int cRoom::theSeperation;
 
-int cRoom::furnaceRoomIndex;
+int cRoom::thefurnaceRoomIndex;
 
 cRoom::cRoom(
     const std::string &name,
@@ -112,6 +112,20 @@ cRoom::eCorner cRoom::corner(
         return eCorner::bl_vex;
     if (m1 == eMargin::left && m2 == eMargin::bottom)
         return eCorner::bl_cav;
+    if (m1 == m2)
+    {
+        switch (m1)
+        {
+        case eMargin::top:
+            return eCorner::top;
+        case eMargin::right:
+            return eCorner::right;
+        case eMargin::bottom:
+            return eCorner::bottom;
+        case eMargin::left:
+            return eCorner::left;
+        }
+    }
 
     return eCorner::error;
 }
@@ -243,6 +257,106 @@ void cRoom::pipeDoor(std::vector<cxy> &pipeSegment)
     pipeSegment.push_back(p3);
 }
 
+void cRoom::pipeHouse()
+{
+    for (int ri = 0; ri < theHouse.size(); ri++)
+    {
+        std::cout << "calculating pipe layout for room "
+                  << theHouse[ri].myName << "\n";
+        if (ri == thefurnaceRoomIndex)
+        {
+            theHouse[ri].pipefurnaceRoom();
+            continue;
+        }
+
+        theHouse[ri].pipe();
+    }
+}
+
+void cRoom::pipefurnaceRoom()
+{
+    cxy p1, p2, p3;
+    const int wallSeperation = 5;
+    std::vector<cxy> spiral;
+
+    for (int i = 0;
+         i < myWallPoints.size();
+         i++)
+    {
+        if (i == 0)
+            p1 = myWallPoints.back();
+        else
+            p1 = myWallPoints[i - 1];
+        p2 = myWallPoints[i];
+        if (i == myWallPoints.size() - 1)
+            p3 = myWallPoints[0];
+        else
+            p3 = myWallPoints[i + 1];
+        switch (corner(p1, p2, p3))
+        {
+        case eCorner::tr_vex:
+            p2.x -= wallSeperation;
+            p2.y += wallSeperation;
+            break;
+        case eCorner::br_vex:
+            p2.x -= wallSeperation;
+            p2.y -= wallSeperation;
+            break;
+        case eCorner::bl_vex:
+            p2.x += wallSeperation;
+            p2.y -= wallSeperation;
+            break;
+        case eCorner::tl_vex:
+            p2.x += wallSeperation;
+            p2.y += wallSeperation;
+            break;
+        case eCorner::top:
+            p2.y += wallSeperation;
+            break;
+        case eCorner::right:
+            p2.x -= wallSeperation;
+            break;
+        case eCorner::bottom:
+            p2.y -= wallSeperation;
+            break;
+        case eCorner::left:
+            p2.x += wallSeperation;
+            break;
+        case eCorner::error:
+            break;
+        }
+        spiral.push_back(p2);
+    }
+    myPipePoints.push_back(spiral);
+
+    for (int doorIndex : myDoorPoints)
+    {
+        spiral.clear();
+        p1 = myWallPoints[doorIndex];
+        p2 = myWallPoints[doorIndex + 1];
+        switch (side(p1, p2))
+        {
+        case eMargin::top:
+            p1.x += (p2.x - p1.x) / 2;
+            p1.y += wallSeperation;
+            p2.x = p1.x;
+            break;
+        case eMargin::bottom:
+            p1.x += (p2.x - p1.x) / 2;
+            p1.y -= wallSeperation;
+            p2.x = p1.x;
+            break;
+        case eMargin::left:
+            p1.y -= (p1.y - p2.y) / 2;
+            p2.x += wallSeperation;
+            p2.y = p1.y;
+            break;
+        }
+        spiral.push_back(p1);
+        spiral.push_back(p2);
+        myPipePoints.push_back(spiral);
+    }
+}
 void cRoom::pipe()
 {
     int concaveIndex;
@@ -342,7 +456,7 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
     {
         pipeDoor(spiral);
         startIndex = myDoorPoints[0] + 1;
-        if( startIndex == myWallPoints.size()-1)
+        if (startIndex == myWallPoints.size() - 1)
             startIndex = 1;
     }
     else
@@ -393,12 +507,13 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
             case eCorner::error:
                 // throw std::runtime_error(
                 //     " pipe corner error");
-                switch( cRoom::side(p1,p2) ) {
-                    case cRoom::eMargin::left:
-                        p2.x  += wallSeperation;
-                        break;
-                    default:
-                        throw std::runtime_error("NYI");
+                switch (cRoom::side(p1, p2))
+                {
+                case cRoom::eMargin::left:
+                    p2.x += wallSeperation;
+                    break;
+                default:
+                    throw std::runtime_error("NYI");
                 }
                 break;
             }
@@ -469,7 +584,7 @@ void cRoom::readfile(const std::string &fname)
     {
         if (!line.length())
             continue;
-        if( line.find("//") == 0 ) 
+        if (line.find("//") == 0)
             break;
 
         int p = line.find("room");
@@ -491,9 +606,10 @@ void cRoom::readfile(const std::string &fname)
         }
 
         p = line.find("furnace");
-        if( p == 0 ) {
+        if (p == 0)
+        {
             p = line.find(" ");
-            furnaceRoomName = line.substr(p+1 );
+            furnaceRoomName = line.substr(p + 1);
             continue;
         }
 
@@ -514,29 +630,48 @@ void cRoom::readfile(const std::string &fname)
 
     set(6); // pipe seperation
 
-    furnaceRoom( furnaceRoomName);
+    furnaceRoom(furnaceRoomName);
 }
 
- void cRoom::furnaceRoom( const std::string& name )
- {
-    if( ! name.length() )
+void cRoom::furnaceRoom(const std::string &name)
+{
+    if (!name.length())
         throw std::runtime_error("Unspecified furnace room");
-    auto it = std::find_if( theHouse.begin(), theHouse.end(),
-    [&](cRoom& room ) -> bool
-    { 
-        return (room.myName == name);
-    });
-    if( it == theHouse.end())
-        throw std::runtime_error("Unspecified furnace room " + name );
-    furnaceRoomIndex = it - theHouse.begin();
+    auto it = std::find_if(theHouse.begin(), theHouse.end(),
+                           [&](cRoom &room) -> bool
+                           {
+                               return (room.myName == name);
+                           });
+    if (it == theHouse.end())
+        throw std::runtime_error("Unspecified furnace room " + name);
+    thefurnaceRoomIndex = it - theHouse.begin();
 
     // check that there are enough doors in the furnace room
     // to reach every other room
-    if( theHouse.size()-1 > theHouse[furnaceRoomIndex].doorCount() )
-        throw std::runtime_error( "Not enough doors in furnace room");
+    if (theHouse.size() - 1 > theHouse[thefurnaceRoomIndex].doorCount())
+        throw std::runtime_error("Not enough doors in furnace room");
 
-    //TODO: check every room connected directly to furnace room TID3
- }
+    // TODO: check every room connected directly to furnace room TID3
+}
+
+void cGUI::drawHousePipes(
+    wex::shapes &S)
+{
+    S.penThick(1);
+    for (int ir = 0; ir < cRoom::roomCount(); ir++)
+    {
+        if (ir == cRoom::furnaceRoomIndex())
+        {
+            drawFurnacePipes(S, ir);
+            continue;
+        }
+        // loop over pipe segments
+        // for (auto &pipesegment : cRoom::room[ir].pipes())
+        // {
+        //     drawPipeSegment(S, pipesegment);
+        // }
+    }
+}
 
 void cGUI::drawWalls(
     wex::shapes &S,
@@ -565,6 +700,105 @@ void cGUI::drawWalls(
                 S.line({x1, y1, x2, y2});
             }
         }
+    }
+}
+
+void cGUI::drawFurnacePipes(
+    wex::shapes &S,
+    int ir)
+{
+
+    cxy p1, p2, p3, p4;
+    auto pipes = cRoom::getRooms()[ir].pipes();
+    auto seg = pipes[0];
+    {
+        for (int ip = 0; ip < seg.size(); ip++)
+        {
+            p1 = p2;
+            p2.x = off + scale * seg[ip].x;
+            p2.y = off + scale * seg[ip].y;
+            if (ip == 0)
+                continue;
+            S.color(0x0000FF);
+            S.line({p1.x, p1.y, p2.x, p2.y});
+            switch (cRoom::side(p1, p2))
+            {
+            case cRoom::eMargin::top:
+                p3.x = p1.x + 3;
+                p3.y = p1.y + 3;
+                p4.x = p2.x - 3;
+                p4.y = p2.y + 3;
+                break;
+            case cRoom::eMargin::right:
+                p3.x = p1.x - 3;
+                p3.y = p1.y + 3;
+                p4.x = p2.x - 3;
+                p4.y = p2.y - 3;
+                break;
+            case cRoom::eMargin::bottom:
+                p3.x = p1.x - 3;
+                p3.y = p1.y - 3;
+                p4.x = p2.x + 3;
+                p4.y = p2.y - 3;
+                break;
+            case cRoom::eMargin::left:
+                p3.x = p1.x + 3;
+                p3.y = p1.y - 3;
+                p4.x = p2.x + 3;
+                p4.y = p2.y + 3;
+                break;
+            }
+            S.color(0xFF0000);
+            S.line({p3.x, p3.y, p4.x, p4.y});
+        }
+        p1 = p2;
+        p2.x = off + scale * pipes[0][0].x;
+        p2.y = off + scale * pipes[0][0].y;
+        S.color(0x0000FF);
+        S.line({p1.x, p1.y, p2.x, p2.y});
+        p3.x = p1.x + 3;
+        p3.y = p1.y - 3;
+        p4.x = p2.x + 3;
+        p4.y = p2.y + 3;
+        S.color(0xFF0000);
+        S.line({p3.x, p3.y, p4.x, p4.y});
+    }
+
+    for (int i = 1; i < pipes.size(); i++)
+    {
+        p1.x = off + scale * pipes[i][0].x;
+        p1.y = off + scale * pipes[i][0].y;
+        p2.x = off + scale * pipes[i][1].x;
+        p2.y = off + scale * pipes[i][1].y;
+        S.color(0x0000FF);
+        S.line({p1.x, p1.y, p2.x, p2.y});
+
+        // return pipe
+        switch (cRoom::side(p1, p2))
+        {
+        case cRoom::eMargin::left:
+            p1.x += 5;
+            p1.y += 4;
+            p2.x += 5;
+            break;
+            case cRoom::eMargin::bottom:
+            p1.x += 5;
+            p1.y -= 4;
+            p2.x += 5;
+            break;
+            case cRoom::eMargin::right:
+            p1.x += 5;
+            p1.y -= 4;
+            p2.x += 5;
+            break;
+            case cRoom::eMargin::top:
+            p1.y -= 5;
+            p2.x += 5;
+            p2.y = p1.y;
+            break;
+        }
+        S.color(0xFF0000);
+        S.line({p1.x, p1.y, p2.x, p2.y});
     }
 }
 
@@ -639,6 +873,7 @@ void cGUI::drawPipeSegment(
             S.color(0x0000FF);
             S.line({x1, y1, x2, y2});
             S.color(0);
+            continue;
 
             // draw return pipe
             int rx1, ry1, rx2, ry2;

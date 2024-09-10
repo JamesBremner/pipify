@@ -6,7 +6,7 @@ class cRoom
 
     static std::vector<cRoom> theHouse; // the house composed of rooms
     static int theSeperation;
-    static int furnaceRoomIndex;
+    static int thefurnaceRoomIndex;
 
     std::string myName;
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
@@ -49,7 +49,11 @@ public:
         tr_cav, // top right concave  
         tl_cav,
         bl_cav,
-        br_cav
+        br_cav,
+        top,    // no corner, along top
+        right,
+        bottom,
+        left,
     };
 
     /// @brief which side of the room are two points on
@@ -114,14 +118,13 @@ public:
 
     void pipe();
 
-    static void pipeHouse()
-    {
-        for (auto &r : theHouse) {
-            std::cout << "calculating pipe layout for room "
-                << r.myName << "\n";
-            r.pipe();
-        }
-    }
+    /// @brief layout pipes in furnace room
+
+    void pipefurnaceRoom();
+
+    /// @brief layout pipes in every room of the house
+
+    static void pipeHouse();
 
     /// @brief set the separation between pipes
     /// @param seperation 
@@ -134,6 +137,21 @@ public:
     {
         return theSeperation;
     }
+
+    static int roomCount()
+    {
+        return theHouse.size();
+    }
+
+    static std::vector<cRoom>& getRooms()
+    {
+        return theHouse;
+    }
+
+    static int furnaceRoomIndex()
+    {
+        return thefurnaceRoomIndex;
+    };
 
     static void furnaceRoom( const std::string& name );
 

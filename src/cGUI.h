@@ -85,15 +85,8 @@ public:
                     drawWalls( S, r );
                 }
 
-                S.penThick(1);
-                for (auto &r : cRoom::housePipes())
-                {
-                    // loop over pipe segments
-                    for (auto &pipesegment : r)
-                    {
-                        drawPipeSegment(S, pipesegment);
-                    }
-                }
+                drawHousePipes( S );
+
             });
 
         show();
@@ -123,7 +116,14 @@ private:
 
             fm.text( paths);
 
+            try {
             cRoom::pipeHouse();
+            }
+            catch(std::runtime_error& e)
+            {
+                wex::msgbox(e.what());
+                exit(1);
+            }
 
             // refresh display with contents of opened file
             fm.update();
@@ -150,6 +150,13 @@ private:
     void drawPipeSegment(
         wex::shapes &S,
         const std::vector<cxy> &pipesegment);
+
+    void drawHousePipes(
+        wex::shapes& S    );
+
+    void drawFurnacePipes(
+        wex::shapes &S,
+        int ir );
 
     void drawWalls(
         wex::shapes &S,
