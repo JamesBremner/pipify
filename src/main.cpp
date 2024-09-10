@@ -440,24 +440,26 @@ void cRoom::pipeConcave(int concaveIndex)
         cxy startPoint = myWallPoints[concaveIndex];
         startPoint.x -= theSeperation;
         startPoint.y += theSeperation;
-        myPipePoints.push_back(subRoom2.pipeConvex(startPoint));
+        myPipePoints.push_back(subRoom2.pipeConvex(startPoint.x, startPoint.y));
     }
     break;
     }
 }
-std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
+std::vector<cxy> cRoom::pipeConvex(int x, int y)
 {
     std::vector<cxy> spiral;
 
-    int startIndex; // first wall point to run alongside
+    int spiralStartCornerIndex;
 
-    cxy p1, p2, p3;
+    cxy spiralStartPoint(x, y);
     if (myDoorPoints.size())
     {
         pipeDoor(spiral);
-        startIndex = myDoorPoints[0] + 1;
-        if (startIndex == myWallPoints.size() - 1)
-            startIndex = 1;
+        spiralStartCornerIndex = myDoorPoints[0] + 2;
+        if (spiralStartCornerIndex == myWallPoints.size() - 1)
+            spiralStartCornerIndex = 1;
+        spiralStartPoint = myWallPoints[myDoorPoints[0] + 1];
+        spiralStartPoint.y += theSeperation;
     }
     else
     {
@@ -465,105 +467,118 @@ std::vector<cxy> cRoom::pipeConvex(const cxy &startPoint)
         // this must be a subroom, part of a concave room
         // start at nearest pipe in first subroom
 
-        spiral.push_back(startPoint);
-        startIndex = 0;
+        spiralStartCornerIndex = 1;
     }
 
-    // loop over wall points until spiral fills the room
-    // for (int L = 1; L < 5; L++)
-    for (int L = 1; true; L++)
-    {
-        int wallSeperation = L * theSeperation;
+    spiral = pipeSpiral(
+        spiralStartPoint,
+        spiralStartCornerIndex);
 
-        for (int i = startIndex + 1;
-             i < myWallPoints.size();
-             i++)
-        {
-            p1 = myWallPoints[i - 1];
-            p2 = myWallPoints[i];
-            if (i == myWallPoints.size() - 1)
-                p3 = myWallPoints[0];
-            else
-                p3 = myWallPoints[i + 1];
-
-            switch (corner(p1, p2, p3))
-            {
-            case eCorner::tr_vex:
-                p2.x -= wallSeperation;
-                p2.y += wallSeperation;
-                break;
-            case eCorner::br_vex:
-                p2.x -= wallSeperation;
-                p2.y -= wallSeperation;
-                break;
-            case eCorner::bl_vex:
-                p2.x += wallSeperation;
-                p2.y -= wallSeperation;
-                break;
-            case eCorner::tl_vex:
-                p2.x += wallSeperation;
-                p2.y += wallSeperation;
-                break;
-            case eCorner::error:
-                // throw std::runtime_error(
-                //     " pipe corner error");
-                switch (cRoom::side(p1, p2))
-                {
-                case cRoom::eMargin::left:
-                    p2.x += wallSeperation;
-                    break;
-                default:
-                    throw std::runtime_error("NYI");
-                }
-                break;
-            }
-
-            // check if spiral has become vanishingly small
-            if (isSpiralComplete(spiral, p2))
-                return spiral;
-
-            spiral.push_back(p2);
-        }
-
-        // close the polygon
-        p1 = myWallPoints.back();
-        p2 = myWallPoints[0];
-        switch (side(p1, p2))
-        {
-        case eMargin::top:
-            p2.x -= wallSeperation;
-            p2.y += wallSeperation;
-            break;
-        case eMargin::right:
-            p2.x -= wallSeperation;
-            p2.y -= wallSeperation;
-            break;
-        case eMargin::bottom:
-            p2.x += wallSeperation;
-            p2.y -= wallSeperation;
-            break;
-        case eMargin::left:
-            p2.x += wallSeperation;
-            p2.y += wallSeperation + theSeperation;
-            break;
-        }
-
-        // check if spiral has become vanishingly small
-        if (isSpiralComplete(spiral, p2))
-            break;
-
-        spiral.push_back(p2);
-    }
     return spiral;
 }
+std::vector<cxy> cRoom::pipeSpiral(
+    const cxy &startPoint,
+    int startIndex)
+{
+    // construct closed polygon without doors
+    std::vector<cxy> noDoors;
+    int nextDoorIndex = 0;
+    for (int i = 0; i < myWallPoints.size(); i++)
+    {
+        if (i == myDoorPoints[nextDoorIndex])
+        {
+            // skip door points
+            i++;
+            i++;
+            if (i == startIndex)
+                startIndex = noDoors.size();
+            nextDoorIndex++;
+            if (nextDoorIndex == myDoorPoints.size() - 1)
+                nextDoorIndex = -1;
+        }
+        noDoors.push_back(myWallPoints[i]);
+    }
+    // close polygon
+    noDoors.push_back(myWallPoints[0]);
 
+    std::vector<cxy> spiral;
+
+    // start from startPoint parameter
+    spiral.push_back(startPoint);
+
+    int wallSeperation = theSeperation;
+
+    for (int cornerIndex = startIndex; true; cornerIndex++)
+    {
+        if (cornerIndex == noDoors.size() - 1)
+        {
+            // wrap around noDoors
+            cornerIndex = 0;
+        }
+
+        bool fspiralwrap = false;
+        if (cornerIndex == startIndex - 1)
+        {
+            // wrap around spiral
+            wallSeperation += theSeperation;
+            fspiralwrap = true;
+        }
+
+        cxy p1, bend, p3;
+        if (cornerIndex == 0)
+            p1 = p1 = noDoors[noDoors.size() - 2];
+        else
+        {
+            p1 = noDoors[cornerIndex - 1];
+        }
+        bend = noDoors[cornerIndex];
+        p3 = noDoors[cornerIndex + 1];
+
+        // std::cout << cornerIndex << " " << bend.x << " " << bend.y
+        //           << " " << wallSeperation << "\n";
+
+        switch (corner(p1, bend, p3))
+        {
+        case eCorner::tr_vex:
+            bend.x -= wallSeperation;
+            bend.y += wallSeperation;
+            break;
+        case eCorner::br_vex:
+            bend.x -= wallSeperation;
+            bend.y -= wallSeperation;
+            break;
+        case eCorner::bl_vex:
+            bend.x += wallSeperation;
+            bend.y -= wallSeperation;
+            break;
+        case eCorner::tl_vex:
+            bend.x += wallSeperation;
+            bend.y += wallSeperation;
+            if (fspiralwrap)
+                bend.x -= theSeperation;
+            break;
+        default:
+            throw std::runtime_error(
+                "pipeSpiral bad corner");
+        }
+        // check if spiral has become vanishingly small
+        if (isSpiralComplete(spiral, bend))
+            return spiral;
+    }
+
+    return spiral;
+}
 bool cRoom::isSpiralComplete(
-    const std::vector<cxy> &spiral,
+    std::vector<cxy> &spiral,
     const cxy &nextbend) const
 {
+    // distance squared from last pipe point to new point
     double d2 = spiral.back().dist2(nextbend);
-    if (d2 < 2 * theSeperation)
+    if (d2 < theSeperation * theSeperation)
         return true;
+
+    // keep going
+    spiral.push_back(bend);
     return false;
 }
 
@@ -637,6 +652,12 @@ void cRoom::furnaceRoom(const std::string &name)
 {
     if (!name.length())
         throw std::runtime_error("Unspecified furnace room");
+    if (name == "test")
+    {
+        // test house with no furnace room
+        thefurnaceRoomIndex = -1;
+        return;
+    }
     auto it = std::find_if(theHouse.begin(), theHouse.end(),
                            [&](cRoom &room) -> bool
                            {
@@ -665,11 +686,12 @@ void cGUI::drawHousePipes(
             drawFurnacePipes(S, ir);
             continue;
         }
+
         // loop over pipe segments
-        // for (auto &pipesegment : cRoom::room[ir].pipes())
-        // {
-        //     drawPipeSegment(S, pipesegment);
-        // }
+        for (auto &pipesegment : cRoom::getRooms()[ir].pipes())
+        {
+            drawPipeSegment(S, pipesegment);
+        }
     }
 }
 
@@ -781,17 +803,17 @@ void cGUI::drawFurnacePipes(
             p1.y += 4;
             p2.x += 5;
             break;
-            case cRoom::eMargin::bottom:
+        case cRoom::eMargin::bottom:
             p1.x += 5;
             p1.y -= 4;
             p2.x += 5;
             break;
-            case cRoom::eMargin::right:
+        case cRoom::eMargin::right:
             p1.x += 5;
             p1.y -= 4;
             p2.x += 5;
             break;
-            case cRoom::eMargin::top:
+        case cRoom::eMargin::top:
             p1.y -= 5;
             p2.x += 5;
             p2.y = p1.y;
@@ -873,7 +895,6 @@ void cGUI::drawPipeSegment(
             S.color(0x0000FF);
             S.line({x1, y1, x2, y2});
             S.color(0);
-            continue;
 
             // draw return pipe
             int rx1, ry1, rx2, ry2;

@@ -6,3 +6,4 @@ room one
 0 60
 0 40
 4
+furnace test

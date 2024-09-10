@@ -15,12 +15,12 @@ class cRoom
 
 public:
     cRoom(
-        const std::string& name,
+        const std::string &name,
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
     /// @brief get the wall segments, ready to draw the room wall
-    /// @return 
+    /// @return
     std::vector<std::vector<cxy>> wallSegments();
 
     std::vector<std::vector<cxy>> pipes() const
@@ -46,11 +46,11 @@ public:
         tl_vex,
         bl_vex,
         br_vex,
-        tr_cav, // top right concave  
+        tr_cav, // top right concave
         tl_cav,
         bl_cav,
         br_cav,
-        top,    // no corner, along top
+        top, // no corner, along top
         right,
         bottom,
         left,
@@ -66,9 +66,9 @@ public:
     static eMargin side(const cxy &p1, const cxy &p2);
 
     /// @brief identify corner type
-    /// @param p1 
-    /// @param p2 
-    /// @param p3 
+    /// @param p1
+    /// @param p2
+    /// @param p3
     /// @return eCorner
 
     static eCorner corner(
@@ -81,38 +81,38 @@ public:
     /// @param p2 end of pipe segment
     /// @return true if pipe segment crosses any existing pipe segments
 
-    bool isPipeCrossing( const cxy& p1, const cxy& p2 ) const;
+    bool isPipeCrossing(const cxy &p1, const cxy &p2) const;
 
     /// @brief Check if room is concave
     /// @param[out] index if concave, the wallpoint index of the concave corner
     /// @return concave corner type, or eCorner::error if convex
 
-    eCorner isConcave( int& index ) const;
+    eCorner isConcave(int &index) const;
 
     /// @brief find wall segment on a margin
     /// @param m margin
     /// @return segment start and end
 
-    std::pair<cxy,cxy> find( eMargin m ) const;
+    std::pair<cxy, cxy> find(eMargin m) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
     /// @param startPoint
     /// @return vector of pipe bend points
     /// for a convex room, the startPoint can be ignored
-    /// for any subroom, except the first, 
+    /// for any subroom, except the first,
     ///         startPoint should be the nearest pipe point in first subroom
 
-    std::vector<cxy> pipeConvex( const cxy& startPoint = cxy() );
+    std::vector<cxy> pipeConvex(int x = 0, int y = 0);
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
 
-    void pipeConcave( int concaveIndex );
+    void pipeConcave(int concaveIndex);
 
     /// @brief layout pipes in a doorway
     /// @param spiral pipes added to
 
-    void pipeDoor(std::vector<cxy>& spiral);
+    void pipeDoor(std::vector<cxy> &spiral);
 
     /// @brief layout pipes in room
 
@@ -127,7 +127,7 @@ public:
     static void pipeHouse();
 
     /// @brief set the separation between pipes
-    /// @param seperation 
+    /// @param seperation
 
     static void set(int seperation)
     {
@@ -143,7 +143,7 @@ public:
         return theHouse.size();
     }
 
-    static std::vector<cRoom>& getRooms()
+    static std::vector<cRoom> &getRooms()
     {
         return theHouse;
     }
@@ -153,7 +153,7 @@ public:
         return thefurnaceRoomIndex;
     };
 
-    static void furnaceRoom( const std::string& name );
+    static void furnaceRoom(const std::string &name);
 
     /// @brief get pipe locations for the house
     /// @return locations where pipes turn 90 degrees for each room
@@ -184,27 +184,30 @@ public:
 
     /// @brief construct room and add to house
     /// @param name
-    /// @param wallPoints 
-    /// @param doorPoints 
+    /// @param wallPoints
+    /// @param doorPoints
 
     static void add(
-        const std::string& name,
+        const std::string &name,
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
     /// @brief clear rooms from house
-    
+
     static void clear();
 
-    static void readfile( const std::string& fname );
+    static void readfile(const std::string &fname);
 
 private:
+    std::vector<cxy> pipeSpiral(
+        const cxy &startPoint,
+        int startIndex);
+
     bool isSpiralComplete(
-        const std::vector<cxy>& spiral,
-        const cxy& nextbend    ) const;
+        std::vector<cxy> &spiral,
+        const cxy &nextbend) const;
 };
 
 // free functions
 
 bool unitTest();
-

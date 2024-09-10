@@ -82,11 +82,10 @@ public:
                 // loop over rooms
                 for (auto &r : cRoom::houseWallSegments())
                 {
-                    drawWalls( S, r );
+                    drawWalls(S, r);
                 }
 
-                drawHousePipes( S );
-
+                drawHousePipes(S);
             });
 
         show();
@@ -152,14 +151,13 @@ private:
         const std::vector<cxy> &pipesegment);
 
     void drawHousePipes(
-        wex::shapes& S    );
+        wex::shapes &S);
 
     void drawFurnacePipes(
         wex::shapes &S,
-        int ir );
+        int ir);
 
     void drawWalls(
         wex::shapes &S,
-        const std::vector<std::vector<cxy>>& walls    );
-
+        const std::vector<std::vector<cxy>> &walls);
 };
