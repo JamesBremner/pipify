@@ -1,4 +1,6 @@
-
+#include <vector>
+#include <string>
+#include "cxy.h"
 
 // A room composed of walls and doors
 class cRoom
