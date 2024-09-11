@@ -59,6 +59,8 @@ void cGUI::drawFurnacePipes(
 
     cxy p1, p2, p3, p4;
     auto pipes = cRoom::getRooms()[ir].pipes();
+    if( ! pipes.size())
+        return;
     auto seg = pipes[0];
     {
         for (auto p : seg)

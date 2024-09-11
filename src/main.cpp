@@ -490,20 +490,21 @@ void cRoom::boundingRectangle()
     myXmax = -1;
     myYmin = INT_MAX;
     myYmax = -1;
-    for( auto& p : myWallPoints ) {
-        if( p.x < myXmin)
+    for (auto &p : myWallPoints)
+    {
+        if (p.x < myXmin)
             myXmin = p.x;
-        if( p.x > myXmax)
+        if (p.x > myXmax)
             myXmax = p.x;
-        if( p.y < myYmin)
+        if (p.y < myYmin)
             myYmin = p.y;
-        if( p.y > myYmax)
+        if (p.y > myYmax)
             myYmax = p.y;
     }
     double xrange = myXmax - myXmin;
     double yrange = myYmax - myYmin;
     myMaxDim = xrange;
-    if( yrange > xrange )
+    if (yrange > xrange)
         myMaxDim = yrange;
 }
 
@@ -531,10 +532,13 @@ std::vector<cxy> cRoom::pipeSpiral(
         }
 
         bool fspiralwrap = false;
-        if( startIndex == 0 ) {
-            if( cornerIndex == 0 )
+        if (startIndex == 0)
+        {
+            if (cornerIndex == 0)
                 fspiralwrap = true;
-        } else {
+        }
+        else
+        {
             if (cornerIndex == startIndex - 1)
                 fspiralwrap = true;
         }
@@ -603,12 +607,12 @@ bool cRoom::isSpiralComplete(
     // distance squared from last pipe point to new point
     double d2 = spiral.back().dist2(nextbend);
 
-    //std::cout << d2 <<" "<< wallSeperation<< "\n";
+    // std::cout << d2 <<" "<< wallSeperation<< "\n";
 
     if (d2 < theSeperation * theSeperation)
         return true;
 
-    if( wallSeperation > myMaxDim / 2 )
+    if (wallSeperation > myMaxDim / 2)
         return true;
 
     // keep going
@@ -706,6 +710,13 @@ void cRoom::furnaceRoom(const std::string &name)
     if (theHouse.size() - 1 > theHouse[thefurnaceRoomIndex].doorCount())
         throw std::runtime_error("Not enough doors in furnace room");
 
+    // check that other rooms have exactly one door TID5
+    for (auto &r : theHouse)
+        if (r.myName != name)
+            if (r.doorCount() != 1)
+                throw std::runtime_error(
+                    "room has more than one door");
+
     // TODO: check every room connected directly to furnace room TID3
 }
 
@@ -724,7 +735,7 @@ cCorners::cCorners(const cRoom &room)
             // skip door points
             i++;
             i++;
-            if( i >=  wps.size())
+            if (i >= wps.size())
                 break;
             nextDoorIndex++;
             if (nextDoorIndex == dps.size() - 1)
