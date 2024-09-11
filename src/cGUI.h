@@ -148,7 +148,7 @@ private:
 
     void drawPipeSegment(
         wex::shapes &S,
-        const std::vector<cxy> &pipesegment);
+        const cPipeline& pipesegment);
 
     void drawHousePipes(
         wex::shapes &S);

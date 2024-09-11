@@ -16,7 +16,7 @@ bool unitTest()
         return false;
     if (segs[0][0].size() != 2)
         return false;
-    if (segs[0][1].size() != 4)
+    if (segs[0][1].size() != 5)
         return false;
 
 

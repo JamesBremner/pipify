@@ -2,6 +2,72 @@
 #include <string>
 #include "cxy.h"
 
+/// @brief Room corners ( no doors ) as a closed polygon
+class cCorners
+{
+    std::vector<cxy> myCorners;
+    std::vector<int> myIndices; // Wallpoint index of each corner
+
+    public:
+    cCorners( 
+        const std::vector<cxy>& wallPoints,
+        const std::vector<int>& doorPoints );
+
+    const std::vector<cxy>& getCorners() const
+    {
+        return myCorners;
+    }
+    /// corner index from wallpoint index
+    int index( int wp ) const;
+
+};
+
+class cPipeline
+{
+    public:
+    enum class ePipe {
+        none,
+        door,
+        spiral,
+        ring,
+    };
+    ePipe myType;
+    std::vector<cxy> myLine;
+
+    cPipeline( 
+        ePipe type,
+        const std::vector<cxy>& bends )
+    : myType( type ),
+    myLine( bends )
+    {
+
+    }
+    cxy last() const
+    {
+        return myLine.back();
+    }
+    int size() const
+    {
+        return myLine.size();
+    }
+    cxy get( int index ) const
+    {
+        if( 0 > index || index > size()-1)
+            throw std::runtime_error("bad pipeline index");
+        return myLine[index];
+    }
+
+std::vector<cxy>::iterator begin()
+{
+    return myLine.begin();
+}
+std::vector<cxy>::iterator end()
+{
+    return myLine.end();
+}
+
+};
+
 // A room composed of walls and doors
 class cRoom
 {
@@ -13,7 +79,7 @@ class cRoom
     std::string myName;
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
     std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
-    std::vector<std::vector<cxy>> myPipePoints;
+    std::vector<cPipeline> myPipePoints;
 
 public:
     cRoom(
@@ -25,7 +91,7 @@ public:
     /// @return
     std::vector<std::vector<cxy>> wallSegments();
 
-    std::vector<std::vector<cxy>> pipes() const
+    std::vector<cPipeline> pipes() const
     {
         return myPipePoints;
     }
@@ -44,10 +110,10 @@ public:
     enum class eCorner
     {
         error,
-        tr_vex, // top right convex
-        tl_vex,
-        bl_vex,
+        tl_vex, // top left convex
+        tr_vex,
         br_vex,
+        bl_vex,
         tr_cav, // top right concave
         tl_cav,
         bl_cav,
@@ -99,12 +165,11 @@ public:
 
     /// @brief layout pipes in a room guaranteed to be convex
     /// @param startPoint
-    /// @return vector of pipe bend points
     /// for a convex room, the startPoint can be ignored
     /// for any subroom, except the first,
     ///         startPoint should be the nearest pipe point in first subroom
 
-    std::vector<cxy> pipeConvex(int x = 0, int y = 0);
+    void pipeConvex(int x = 0, int y = 0);
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
@@ -114,7 +179,7 @@ public:
     /// @brief layout pipes in a doorway
     /// @param spiral pipes added to
 
-    void pipeDoor(std::vector<cxy> &spiral);
+    void pipeDoor();
 
     /// @brief layout pipes in room
 
@@ -159,11 +224,11 @@ public:
 
     /// @brief get pipe locations for the house
     /// @return locations where pipes turn 90 degrees for each room
-    /// room vector, containing segment vector, containing bend points
+    /// room vector, containing vector of pipelines
 
-    static std::vector<std::vector<std::vector<cxy>>> housePipes()
+    static std::vector<std::vector<cPipeline>> housePipes()
     {
-        std::vector<std::vector<std::vector<cxy>>> ret;
+        std::vector<std::vector<cPipeline>> ret;
         for (auto &r : theHouse)
         {
             ret.push_back(r.pipes());
@@ -198,11 +263,19 @@ public:
 
     static void clear();
 
+    static eCorner next( const eCorner& corner )
+    {
+        int ret = (int)corner;
+        ret++;
+        if( ret > (int) eCorner::bl_vex )
+            ret = (int)eCorner::tl_vex;
+        return (eCorner ) ret;
+    }
+
     static void readfile(const std::string &fname);
 
 private:
     std::vector<cxy> pipeSpiral(
-        const cxy &startPoint,
         int startIndex);
 
     bool isSpiralComplete(
