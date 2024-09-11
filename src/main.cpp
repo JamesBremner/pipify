@@ -486,28 +486,9 @@ std::vector<cxy> cRoom::pipeSpiral(
     int startIndex)
 {
     // construct closed polygon without doors
-    std::vector<cxy> noDoors;
-    int nextDoorIndex = 0;
-    for (int i = 0; i < myWallPoints.size(); i++)
-    {
-        if (i == myDoorPoints[nextDoorIndex])
-        {
-            // skip door points
-            i++;
-            i++;
-            if (i == startIndex)
-            {
-                // convert start index from index into wall point to index to noDoors
-                startIndex = noDoors.size();
-            }
-            nextDoorIndex++;
-            if (nextDoorIndex == myDoorPoints.size() - 1)
-                nextDoorIndex = -1;
-        }
-        noDoors.push_back(myWallPoints[i]);
-    }
-    // close polygon
-    noDoors.push_back(myWallPoints[0]);
+    cCorners corners(*this);
+    startIndex = corners.index(startIndex);
+    std::vector<cxy> noDoors = corners.getCorners();
 
     std::vector<cxy> spiral;
 
@@ -689,28 +670,40 @@ void cRoom::furnaceRoom(const std::string &name)
     // TODO: check every room connected directly to furnace room TID3
 }
 
-cCorners::cCorners(
-    const std::vector<cxy> &wallPoints,
-    const std::vector<int>& doorPoints )
+cCorners::cCorners(const cRoom &room)
 {
     myCorners.clear();
+    const auto &wps = room.getWallPoints();
+    const auto &dps = room.getDoorPoints();
     int nextDoorIndex = 0;
-    for (int i = 0; i < wallPoints.size(); i++)
+
+    // loop over wall points
+    for (int i = 0; i < wps.size(); i++)
     {
-        if (i == doorPoints[nextDoorIndex])
+        if (i == dps[nextDoorIndex])
         {
             // skip door points
             i++;
             i++;
             nextDoorIndex++;
-            if (nextDoorIndex == doorPoints.size() - 1)
+            if (nextDoorIndex == dps.size() - 1)
                 nextDoorIndex = -1;
         }
         myIndices.push_back(i);
-        myCorners.push_back(wallPoints[i]);
+        myCorners.push_back(wps[i]);
     }
     // close polygon
-    myCorners.push_back(wallPoints[0]);
+    myCorners.push_back(wps[0]);
+}
+
+int cCorners::index(int wp) const
+{
+    auto it = std::find(
+        myIndices.begin(), myIndices.end(),
+        wp);
+    if (it == myIndices.end())
+        return -1;
+    return it - myIndices.begin();
 }
 
 main()

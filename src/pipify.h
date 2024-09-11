@@ -2,25 +2,7 @@
 #include <string>
 #include "cxy.h"
 
-/// @brief Room corners ( no doors ) as a closed polygon
-class cCorners
-{
-    std::vector<cxy> myCorners;
-    std::vector<int> myIndices; // Wallpoint index of each corner
 
-    public:
-    cCorners( 
-        const std::vector<cxy>& wallPoints,
-        const std::vector<int>& doorPoints );
-
-    const std::vector<cxy>& getCorners() const
-    {
-        return myCorners;
-    }
-    /// corner index from wallpoint index
-    int index( int wp ) const;
-
-};
 
 class cPipeline
 {
@@ -98,6 +80,14 @@ public:
     int doorCount() const
     {
         return myDoorPoints.size();
+    }
+    const std::vector<cxy>& getWallPoints() const
+    {
+        return myWallPoints;
+    }
+    const std::vector<int>& getDoorPoints() const
+    {
+        return myDoorPoints;
     }
 
     enum class eMargin
@@ -281,6 +271,25 @@ private:
     bool isSpiralComplete(
         std::vector<cxy> &spiral,
         const cxy &nextbend) const;
+};
+
+/// @brief Room corners ( no doors ) as a closed polygon
+class cCorners
+{
+    std::vector<cxy> myCorners;
+    std::vector<int> myIndices; // Wallpoint index of each corner
+
+    public:
+    cCorners( const cRoom& room );
+
+    const std::vector<cxy>& getCorners() const
+    {
+        return myCorners;
+    }
+
+    /// corner index from wallpoint index   
+    int index( int wp ) const;
+
 };
 
 // free functions

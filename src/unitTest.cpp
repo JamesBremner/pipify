@@ -19,6 +19,13 @@ bool unitTest()
     if (segs[0][1].size() != 5)
         return false;
 
+    cCorners C( cRoom::getRooms()[0] );
+    const auto& vc = C.getCorners();
+    if( vc.size() != 5 )
+        return false;
+    if( C.index(3) != 1 )
+        return false;
+
 
     cxy p1(0,1);
     cxy p2(0,0);
