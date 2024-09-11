@@ -209,10 +209,10 @@ void cGUI::drawPipeSegment(
                     ry2 = y2 - outInSep;
                     break;
                     case cRoom::eMargin::left:
-                    rx1 = x1 - outInSep;
-                    ry1 = y1 - outInSep;
-                    rx2 = x2 - outInSep;
-                    ry2 = y2 + outInSep;
+                    rx1 = x1 + outInSep;
+                    ry1 = y1;
+                    rx2 = x2 + outInSep;
+                    ry2 = y2 - outInSep;
                     break;
                 }
                 std::cout << "door return "

@@ -244,12 +244,12 @@ void cRoom::pipeDoor()
         p3.y = p2.y;
         break;
     case eMargin::left:
-        p1.x = d1.x - 2 * theSeperation;
-        p1.y = d1.y;
-        p2.x = p1.x;
-        p2.y = p1.y - theSeperation;
-        p3.x = p2.x - theSeperation;
-        p3.y = p2.y;
+        p1.x = d1.x;
+        p1.y = d1.y - theSeperation;
+        p2.x = p1.x + theSeperation;
+        p2.y = p1.y;
+        p3.x = p2.x;
+        p3.y = p2.y - theSeperation;
         break;
     }
     std::vector<cxy> pipeSegment;
