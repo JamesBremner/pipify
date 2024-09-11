@@ -61,6 +61,8 @@ class cRoom
     std::string myName;
     std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
     std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
+    double myXmin, myXmax, myYmin, myYmax, myMaxDim;  // bounding rectangle
+
     std::vector<cPipeline> myPipePoints;
 
 public:
@@ -265,11 +267,15 @@ public:
     static void readfile(const std::string &fname);
 
 private:
+
+    void boundingRectangle();
+
     std::vector<cxy> pipeSpiral(
         int startIndex);
 
     bool isSpiralComplete(
         std::vector<cxy> &spiral,
+        int wallSeperation,
         const cxy &nextbend) const;
 };
 

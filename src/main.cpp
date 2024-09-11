@@ -26,6 +26,7 @@ cRoom::cRoom(
 {
     myWallPoints = wallPoints;
     myDoorPoints = doorPoints;
+    boundingRectangle();
     // pipe();
 }
 
@@ -461,8 +462,8 @@ void cRoom::pipeConvex(int x, int y)
     {
         pipeDoor();
         spiralStartCornerIndex = myDoorPoints[0] + 2;
-        // if (spiralStartCornerIndex == myWallPoints.size() - 1)
-        //     spiralStartCornerIndex = 1;
+        if (spiralStartCornerIndex == myWallPoints.size())
+            spiralStartCornerIndex = 0;
         spiralStartPoint = myWallPoints[myDoorPoints[0] + 1];
         spiralStartPoint.y += theSeperation;
     }
@@ -482,6 +483,30 @@ void cRoom::pipeConvex(int x, int y)
         cPipeline::ePipe::spiral,
         spiral);
 }
+
+void cRoom::boundingRectangle()
+{
+    myXmin = INT_MAX;
+    myXmax = -1;
+    myYmin = INT_MAX;
+    myYmax = -1;
+    for( auto& p : myWallPoints ) {
+        if( p.x < myXmin)
+            myXmin = p.x;
+        if( p.x > myXmax)
+            myXmax = p.x;
+        if( p.y < myYmin)
+            myYmin = p.y;
+        if( p.y > myYmax)
+            myYmax = p.y;
+    }
+    double xrange = myXmax - myXmin;
+    double yrange = myYmax - myYmin;
+    myMaxDim = xrange;
+    if( yrange > xrange )
+        myMaxDim = yrange;
+}
+
 std::vector<cxy> cRoom::pipeSpiral(
     int startIndex)
 {
@@ -506,7 +531,14 @@ std::vector<cxy> cRoom::pipeSpiral(
         }
 
         bool fspiralwrap = false;
-        if (cornerIndex == startIndex - 1)
+        if( startIndex == 0 ) {
+            if( cornerIndex == 0 )
+                fspiralwrap = true;
+        } else {
+            if (cornerIndex == startIndex - 1)
+                fspiralwrap = true;
+        }
+        if (fspiralwrap)
         {
             // wrap around spiral
             wallSeperation += theSeperation;
@@ -515,7 +547,7 @@ std::vector<cxy> cRoom::pipeSpiral(
 
         cxy p1, bend, p3;
         if (cornerIndex == 0)
-            p1 = p1 = noDoors[noDoors.size() - 2];
+            p1 = noDoors[noDoors.size() - 1];
         else
         {
             p1 = noDoors[cornerIndex - 1];
@@ -557,7 +589,7 @@ std::vector<cxy> cRoom::pipeSpiral(
                 "pipeSpiral bad corner");
         }
         // check if spiral has become vanishingly small
-        if (isSpiralComplete(spiral, bend))
+        if (isSpiralComplete(spiral, wallSeperation, bend))
             return spiral;
     }
 
@@ -565,11 +597,18 @@ std::vector<cxy> cRoom::pipeSpiral(
 }
 bool cRoom::isSpiralComplete(
     std::vector<cxy> &spiral,
+    int wallSeperation,
     const cxy &nextbend) const
 {
     // distance squared from last pipe point to new point
     double d2 = spiral.back().dist2(nextbend);
+
+    //std::cout << d2 <<" "<< wallSeperation<< "\n";
+
     if (d2 < theSeperation * theSeperation)
+        return true;
+
+    if( wallSeperation > myMaxDim / 2 )
         return true;
 
     // keep going
@@ -685,6 +724,8 @@ cCorners::cCorners(const cRoom &room)
             // skip door points
             i++;
             i++;
+            if( i >=  wps.size())
+                break;
             nextDoorIndex++;
             if (nextDoorIndex == dps.size() - 1)
                 nextDoorIndex = -1;
