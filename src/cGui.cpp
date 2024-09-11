@@ -56,20 +56,27 @@ void cGUI::drawFurnacePipes(
     wex::shapes &S,
     int ir)
 {
-
     cxy p1, p2, p3, p4;
     auto pipes = cRoom::getRooms()[ir].pipes();
-    if( ! pipes.size())
+    if (!pipes.size())
         return;
-    auto seg = pipes[0];
+    for (auto &seg : pipes)
     {
+        p2.x = -INT_MAX;
         for (auto p : seg)
         {
+            // start from previous point
             p1 = p2;
+
+            // new point
             p2.x = off + scale * p.x;
             p2.y = off + scale * p.y;
-            // if (ip == 0)
-            //     continue;
+
+            if (p1.x == -INT_MAX) {
+                // first time through
+                continue;
+            }
+
             S.color(0x0000FF);
             S.line({p1.x, p1.y, p2.x, p2.y});
             switch (cRoom::side(p1, p2))
@@ -187,30 +194,32 @@ void cGUI::drawPipeSegment(
             // draw return pipe
 
             int rx1, ry1, rx2, ry2;
-            if( pipesegment.myType == cPipeline::ePipe::door ) {
+            if (pipesegment.myType == cPipeline::ePipe::door)
+            {
 
                 // door
-                
-                switch( cRoom::side( cxy(x1,y1),cxy(x2,y2))) {
-                    case cRoom::eMargin::top:
+
+                switch (cRoom::side(cxy(x1, y1), cxy(x2, y2)))
+                {
+                case cRoom::eMargin::top:
                     rx1 = x1 - outInSep;
                     ry1 = y1 + outInSep;
                     rx2 = x2 + outInSep;
                     ry2 = y1 + outInSep;
                     break;
-                    case cRoom::eMargin::right:
+                case cRoom::eMargin::right:
                     rx1 = x1 - outInSep;
                     ry1 = y1 - outInSep;
                     rx2 = x2 - outInSep;
                     ry2 = y2 + outInSep;
                     break;
-                    case cRoom::eMargin::bottom:
+                case cRoom::eMargin::bottom:
                     rx1 = x1;
                     ry1 = y1 - outInSep;
                     rx2 = x2 - outInSep;
                     ry2 = y2 - outInSep;
                     break;
-                    case cRoom::eMargin::left:
+                case cRoom::eMargin::left:
                     rx1 = x1 + outInSep;
                     ry1 = y1;
                     rx2 = x2 + outInSep;
@@ -218,18 +227,17 @@ void cGUI::drawPipeSegment(
                     break;
                 }
                 std::cout << "door return "
-                    << rx1 <<" "
-                    << ry1 <<" "
-                    << rx2 <<" "
-                    << ry2 <<" "
-                    << "\n";
+                          << rx1 << " "
+                          << ry1 << " "
+                          << rx2 << " "
+                          << ry2 << " "
+                          << "\n";
                 S.color(0xFF0000);
                 S.line({rx1, ry1, rx2, ry2});
 
                 continue;
             }
 
-            
             if (ip == pipesegment.size() - 1)
                 corner = cRoom::next(corner);
             else

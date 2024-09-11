@@ -212,6 +212,11 @@ public:
         return thefurnaceRoomIndex;
     };
 
+    /// @brief check that a valid furnace room has been defined
+    /// @param name furnace room name from input file
+    ///
+    /// throws exception on error
+    
     static void furnaceRoom(const std::string &name);
 
     /// @brief get pipe locations for the house

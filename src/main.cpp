@@ -279,90 +279,86 @@ void cRoom::pipeHouse()
 
 void cRoom::pipefurnaceRoom()
 {
-    cxy p1, p2, p3;
-    const int wallSeperation = 5;
-    std::vector<cxy> spiral;
+    // ring pipe
 
-    for (int i = 0;
-         i < myWallPoints.size();
-         i++)
+    // construct closed polygon without doors
+    cCorners corners(*this);
+    std::vector<cxy> noDoors = corners.getCorners();
+
+    std::vector<cxy> ring;
+    for (int icorner = 0; icorner < noDoors.size(); icorner++)
     {
-        if (i == 0)
-            p1 = myWallPoints.back();
+        cxy p1, bend, p2;
+        if (icorner == 0)
+            p1 = noDoors[noDoors.size() - 2];
         else
-            p1 = myWallPoints[i - 1];
-        p2 = myWallPoints[i];
-        if (i == myWallPoints.size() - 1)
-            p3 = myWallPoints[0];
+            p1 = noDoors[icorner - 1];
+
+        bend = noDoors[icorner];
+
+        if (icorner == noDoors.size() - 1)
+            p2 = noDoors[1];
         else
-            p3 = myWallPoints[i + 1];
-        switch (corner(p1, p2, p3))
+            p2 = noDoors[icorner + 1];
+
+        switch (corner(p1, bend, p2))
         {
-        case eCorner::tr_vex:
-            p2.x -= wallSeperation;
-            p2.y += wallSeperation;
+        case cRoom::eCorner::tl_vex:
+            bend = cxy(
+                bend.x + theSeperation,
+                bend.y + theSeperation);
             break;
-        case eCorner::br_vex:
-            p2.x -= wallSeperation;
-            p2.y -= wallSeperation;
+        case cRoom::eCorner::tr_vex:
+            bend = cxy(
+                bend.x - theSeperation,
+                bend.y + theSeperation);
             break;
-        case eCorner::bl_vex:
-            p2.x += wallSeperation;
-            p2.y -= wallSeperation;
+        case cRoom::eCorner::br_vex:
+            bend = cxy(
+                bend.x - theSeperation,
+                bend.y - theSeperation);
             break;
-        case eCorner::tl_vex:
-            p2.x += wallSeperation;
-            p2.y += wallSeperation;
-            break;
-        case eCorner::top:
-            p2.y += wallSeperation;
-            break;
-        case eCorner::right:
-            p2.x -= wallSeperation;
-            break;
-        case eCorner::bottom:
-            p2.y -= wallSeperation;
-            break;
-        case eCorner::left:
-            p2.x += wallSeperation;
-            break;
-        case eCorner::error:
+        case cRoom::eCorner::bl_vex:
+            bend = cxy(
+                bend.x + theSeperation,
+                bend.y - theSeperation);
             break;
         }
-        spiral.push_back(p2);
+        ring.push_back(bend);
     }
     myPipePoints.emplace_back(
-        cPipeline::ePipe::spiral,
-        spiral);
+        cPipeline::ePipe::ring,
+        ring);
+
+    // door pipes
 
     for (int doorIndex : myDoorPoints)
     {
-        spiral.clear();
-        p1 = myWallPoints[doorIndex];
-        p2 = myWallPoints[doorIndex + 1];
+        cxy p1 = myWallPoints[doorIndex];
+        cxy p2 = myWallPoints[doorIndex + 1];
         switch (side(p1, p2))
         {
         case eMargin::top:
             p1.x += (p2.x - p1.x) / 2;
-            p1.y += wallSeperation;
+            p1.y += theSeperation;
             p2.x = p1.x;
             break;
         case eMargin::bottom:
             p1.x += (p2.x - p1.x) / 2;
-            p1.y -= wallSeperation;
+            p1.y -= theSeperation;
             p2.x = p1.x;
             break;
         case eMargin::left:
             p1.y -= (p1.y - p2.y) / 2;
-            p2.x += wallSeperation;
+            p2.x += theSeperation;
             p2.y = p1.y;
             break;
         }
-        spiral.push_back(p1);
-        spiral.push_back(p2);
+
+        std::vector<cxy> pipe = { p1, p2};
         myPipePoints.emplace_back(
-            cPipeline::ePipe::ring,
-            spiral);
+            cPipeline::ePipe::door,
+            pipe);
     }
 }
 void cRoom::pipe()
@@ -738,8 +734,11 @@ cCorners::cCorners(const cRoom &room)
             if (i >= wps.size())
                 break;
             nextDoorIndex++;
-            if (nextDoorIndex == dps.size() - 1)
+            if (nextDoorIndex == dps.size())
+            {
+                // no more doors
                 nextDoorIndex = -1;
+            }
         }
         myIndices.push_back(i);
         myCorners.push_back(wps[i]);
