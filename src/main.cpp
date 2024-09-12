@@ -212,15 +212,16 @@ void cRoom::pipeDoor()
     cxy p1, p2, p3;
 
     // start at the first door
+    // There should be only one door 
     cxy d1 = myWallPoints[myDoorPoints[0]];
     cxy d2 = myWallPoints[myDoorPoints[0] + 1];
-    double doorWidth = sqrt(d1.dist2(d2));
+    double doorWidthHalf = sqrt(d1.dist2(d2)) / 2;
 
     // switch on side where door is placed
     switch (side(d1, d2))
     {
     case eMargin::top:
-        p1.x = d1.x + theSeperation;
+        p1.x = d1.x + doorWidthHalf;
         p1.y = d1.y;
         p2.x = p1.x;
         p2.y = p1.y + theSeperation;
@@ -229,14 +230,14 @@ void cRoom::pipeDoor()
         break;
     case eMargin::right:
         p1.x = d1.x;
-        p1.y = d1.y + 2 * theSeperation;
+        p1.y = d1.y + doorWidthHalf;
         p2.x = p1.x - theSeperation;
         p2.y = p1.y;
         p3.x = p2.x;
         p3.y = d2.y;
         break;
     case eMargin::bottom:
-        p1.x = d1.x - 2 * theSeperation;
+        p1.x = d1.x - doorWidthHalf;
         p1.y = d1.y;
         p2.x = p1.x;
         p2.y = p1.y - theSeperation;
@@ -245,7 +246,7 @@ void cRoom::pipeDoor()
         break;
     case eMargin::left:
         p1.x = d1.x;
-        p1.y = d1.y - theSeperation;
+        p1.y = d1.y - doorWidthHalf;
         p2.x = p1.x + theSeperation;
         p2.y = p1.y;
         p3.x = p2.x;
@@ -353,9 +354,14 @@ void cRoom::pipefurnaceRoom()
             p2.x += theSeperation;
             p2.y = p1.y;
             break;
+        case eMargin::right:
+            p1.y -= (p1.y - p2.y) / 2;
+            p2.x -= theSeperation;
+            p2.y = p1.y;
+            break;
         }
 
-        std::vector<cxy> pipe = { p1, p2};
+        std::vector<cxy> pipe = {p1, p2};
         myPipePoints.emplace_back(
             cPipeline::ePipe::door,
             pipe);
@@ -456,7 +462,9 @@ void cRoom::pipeConvex(int x, int y)
     cxy spiralStartPoint(x, y);
     if (myDoorPoints.size())
     {
+        // layout pipes through the door to the furnace room
         pipeDoor();
+
         spiralStartCornerIndex = myDoorPoints[0] + 2;
         if (spiralStartCornerIndex == myWallPoints.size())
             spiralStartCornerIndex = 0;

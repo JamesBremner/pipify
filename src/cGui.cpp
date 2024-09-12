@@ -56,10 +56,12 @@ void cGUI::drawFurnacePipes(
     wex::shapes &S,
     int ir)
 {
+    const int retSep = cRoom::seperation() + 2;
     cxy p1, p2, p3, p4;
     auto pipes = cRoom::getRooms()[ir].pipes();
     if (!pipes.size())
         return;
+
     for (auto &seg : pipes)
     {
         p2.x = -INT_MAX;
@@ -72,38 +74,88 @@ void cGUI::drawFurnacePipes(
             p2.x = off + scale * p.x;
             p2.y = off + scale * p.y;
 
-            if (p1.x == -INT_MAX) {
+            if (p1.x == -INT_MAX)
+            {
                 // first time through
                 continue;
             }
 
             S.color(0x0000FF);
             S.line({p1.x, p1.y, p2.x, p2.y});
+
             switch (cRoom::side(p1, p2))
             {
+
             case cRoom::eMargin::top:
-                p3.x = p1.x + 3;
-                p3.y = p1.y + 3;
-                p4.x = p2.x - 3;
-                p4.y = p2.y + 3;
+                if (seg.myType == cPipeline::ePipe::ring)
+                {
+                    p3.x = p1.x + retSep;
+                    p3.y = p1.y + retSep;
+                    p4.x = p2.x - retSep;
+                    p4.y = p2.y + retSep;
+                }
+                else
+                {
+                    p3 = p1;
+                    p4 = p2;
+                    p3.y -= retSep;
+                    p4.x += retSep;
+                    p4.y -= retSep;
+                }
                 break;
+
             case cRoom::eMargin::right:
-                p3.x = p1.x - 3;
-                p3.y = p1.y + 3;
-                p4.x = p2.x - 3;
-                p4.y = p2.y - 3;
+                if (seg.myType == cPipeline::ePipe::ring)
+                {
+                    p3.x = p1.x - retSep;
+                    p3.y = p1.y + retSep;
+                    p4.x = p2.x - retSep;
+                    p4.y = p2.y - retSep;
+                }
+                else
+                {
+                    p3 = p1;
+                    p4 = p2;
+                    p3.x -= retSep;
+                    p3.y -= retSep;
+                    p4.x -= retSep;
+                }
                 break;
+
             case cRoom::eMargin::bottom:
-                p3.x = p1.x - 3;
-                p3.y = p1.y - 3;
-                p4.x = p2.x + 3;
-                p4.y = p2.y - 3;
+                if (seg.myType == cPipeline::ePipe::ring)
+                {
+                    p3.x = p1.x - retSep;
+                    p3.y = p1.y - retSep;
+                    p4.x = p2.x + retSep;
+                    p4.y = p2.y - retSep;
+                }
+                else
+                {
+                    p3 = p1;
+                    p4 = p2;
+                    p3.x -= retSep;
+                    p3.y += retSep;
+                    p4.x -= retSep;
+                    p4.y += retSep;
+                }
                 break;
             case cRoom::eMargin::left:
-                p3.x = p1.x + 3;
-                p3.y = p1.y - 3;
-                p4.x = p2.x + 3;
-                p4.y = p2.y + 3;
+                if (seg.myType == cPipeline::ePipe::ring)
+                {
+                    p3.x = p1.x + retSep;
+                    p3.y = p1.y - retSep;
+                    p4.x = p2.x + retSep;
+                    p4.y = p2.y + retSep;
+                }
+                else
+                {
+                    p3 = p1;
+                    p4 = p2;
+                    p3.x += retSep;
+                    p3.y += retSep;
+                    p4.x += retSep;
+                }
                 break;
             }
             S.color(0xFF0000);
