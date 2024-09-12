@@ -12,6 +12,7 @@ class cPipeline
         door,
         spiral,
         ring,
+        subroom,
     };
     ePipe myType;
     std::vector<cxy> myLine;
@@ -23,6 +24,10 @@ class cPipeline
     myLine( bends )
     {
 
+    }
+    void set( ePipe type )
+    {
+        myType = type;
     }
     cxy last() const
     {
@@ -276,7 +281,8 @@ private:
     void boundingRectangle();
 
     std::vector<cxy> pipeSpiral(
-        int startIndex);
+        int startIndex,
+        const cxy& startPoint);
 
     bool isSpiralComplete(
         std::vector<cxy> &spiral,

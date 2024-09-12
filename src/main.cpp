@@ -453,8 +453,10 @@ void cRoom::pipeConcave(int concaveIndex)
         startPoint.x -= theSeperation;
         startPoint.y += theSeperation;
         subRoom2.pipeConvex(startPoint.x, startPoint.y);
-        for (auto &l : subRoom2.myPipePoints)
+        for (auto &l : subRoom2.myPipePoints) {
+            l.set( cPipeline::ePipe::subroom );
             myPipePoints.push_back(l);
+        }
     }
     break;
     }
@@ -472,8 +474,10 @@ void cRoom::pipeConvex(int x, int y)
         spiralStartCornerIndex = myDoorPoints[0] + 2;
         if (spiralStartCornerIndex == myWallPoints.size())
             spiralStartCornerIndex = 0;
-        spiralStartPoint = myWallPoints[myDoorPoints[0] + 1];
-        spiralStartPoint.y += theSeperation;
+
+        // start where the door pipes finished
+        spiralStartPoint = myPipePoints.back().last();
+        
     }
     else
     {
@@ -485,7 +489,8 @@ void cRoom::pipeConvex(int x, int y)
     }
 
     auto spiral = pipeSpiral(
-        spiralStartCornerIndex);
+        spiralStartCornerIndex,
+        spiralStartPoint);
 
     myPipePoints.emplace_back(
         cPipeline::ePipe::spiral,
@@ -517,20 +522,17 @@ void cRoom::boundingRectangle()
 }
 
 std::vector<cxy> cRoom::pipeSpiral(
-    int startIndex)
+    int startIndex,
+    const cxy &startPoint)
 {
     // construct closed polygon without doors
     cCorners corners(*this);
     startIndex = corners.index(startIndex);
     std::vector<cxy> noDoors = corners.getCorners();
 
+    // start spiral
     std::vector<cxy> spiral;
-
-    if (myPipePoints.size())
-    {
-        // start from previous pipe point
-        spiral.push_back(myPipePoints.back().last());
-    }
+    spiral.push_back(startPoint);
 
     int wallSeperation = theSeperation;
 
