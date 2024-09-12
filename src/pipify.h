@@ -2,12 +2,11 @@
 #include <string>
 #include "cxy.h"
 
-
-
 class cPipeline
 {
-    public:
-    enum class ePipe {
+public:
+    enum class ePipe
+    {
         none,
         door,
         spiral,
@@ -17,15 +16,14 @@ class cPipeline
     ePipe myType;
     std::vector<cxy> myLine;
 
-    cPipeline( 
+    cPipeline(
         ePipe type,
-        const std::vector<cxy>& bends )
-    : myType( type ),
-    myLine( bends )
+        const std::vector<cxy> &bends)
+        : myType(type),
+          myLine(bends)
     {
-
     }
-    void set( ePipe type )
+    void set(ePipe type)
     {
         myType = type;
     }
@@ -37,22 +35,21 @@ class cPipeline
     {
         return myLine.size();
     }
-    cxy get( int index ) const
+    cxy get(int index) const
     {
-        if( 0 > index || index > size()-1)
+        if (0 > index || index > size() - 1)
             throw std::runtime_error("bad pipeline index");
         return myLine[index];
     }
 
-std::vector<cxy>::iterator begin()
-{
-    return myLine.begin();
-}
-std::vector<cxy>::iterator end()
-{
-    return myLine.end();
-}
-
+    std::vector<cxy>::iterator begin()
+    {
+        return myLine.begin();
+    }
+    std::vector<cxy>::iterator end()
+    {
+        return myLine.end();
+    }
 };
 
 // A room composed of walls and doors
@@ -64,9 +61,9 @@ class cRoom
     static int thefurnaceRoomIndex;
 
     std::string myName;
-    std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
-    std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
-    double myXmin, myXmax, myYmin, myYmax, myMaxDim;  // bounding rectangle
+    std::vector<cxy> myWallPoints;                   // room walls specified by a clockwise open polygon of 2D points
+    std::vector<int> myDoorPoints;                   // indices in myWallPoints of first point of pairs specifying doors
+    double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
 
     std::vector<cPipeline> myPipePoints;
 
@@ -88,7 +85,7 @@ public:
     {
         return myDoorPoints.size();
     }
-    const std::vector<cxy>& getWallPoints() const
+    const std::vector<cxy> &getWallPoints() const
     {
         return myWallPoints;
     }
@@ -271,24 +268,28 @@ public:
     ///
     /// Assumes convex room specified clockwise
 
-    static eCorner next( const eCorner& corner )
+    static eCorner next(const eCorner &corner)
     {
         int ret = (int)corner;
         ret++;
-        if( ret > (int) eCorner::bl_vex )
+        if (ret > (int)eCorner::bl_vex)
             ret = (int)eCorner::tl_vex;
-        return (eCorner ) ret;
+        return (eCorner)ret;
     }
 
     static void readfile(const std::string &fname);
 
 private:
-
     void boundingRectangle();
+
+void WallBetweenSubrooms(
+        cxy& lastSkip, cxy& newPoint,
+        eCorner type,
+        int concaveIndex);
 
     std::vector<cxy> pipeSpiral(
         int startIndex,
-        const cxy& startPoint);
+        const cxy &startPoint);
 
     bool isSpiralComplete(
         std::vector<cxy> &spiral,
@@ -302,17 +303,16 @@ class cCorners
     std::vector<cxy> myCorners;
     std::vector<int> myIndices; // Wallpoint index of each corner
 
-    public:
-    cCorners( const cRoom& room );
+public:
+    cCorners(const cRoom &room);
 
-    const std::vector<cxy>& getCorners() const
+    const std::vector<cxy> &getCorners() const
     {
         return myCorners;
     }
 
-    /// corner index from wallpoint index   
-    int index( int wp ) const;
-
+    /// corner index from wallpoint index
+    int index(int wp) const;
 };
 
 // free functions
