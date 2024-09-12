@@ -87,7 +87,7 @@ public:
     {
         return myWallPoints;
     }
-    const std::vector<int>& getDoorPoints() const
+    std::vector<int> getDoorPoints() const
     {
         return myDoorPoints;
     }
@@ -212,11 +212,11 @@ public:
         return thefurnaceRoomIndex;
     };
 
-    /// @brief check that a valid furnace room has been defined
+    /// @brief check that a valid furnace room has been specified
     /// @param name furnace room name from input file
     ///
     /// throws exception on error
-    
+
     static void furnaceRoom(const std::string &name);
 
     /// @brief get pipe locations for the house
