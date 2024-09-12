@@ -11,13 +11,10 @@ void cGUI::drawHousePipes(
         if (ir == cRoom::furnaceRoomIndex())
         {
             drawFurnacePipes(S, ir);
-            continue;
         }
-
-        // loop over pipe segments
-        for (auto &pipesegment : cRoom::getRooms()[ir].pipes())
+        else
         {
-            drawPipeSegment(S, pipesegment);
+            drawPipes(S, cRoom::getRooms()[ir].pipes());
         }
     }
 }
@@ -81,7 +78,7 @@ void cGUI::drawFurnacePipes(
             }
 
             S.color(0x0000FF);
-            S.line({p1.x, p1.y, p2.x, p2.y});
+            S.line({(int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y});
 
             switch (cRoom::side(p1, p2))
             {
@@ -159,7 +156,7 @@ void cGUI::drawFurnacePipes(
                 break;
             }
             S.color(0xFF0000);
-            S.line({p3.x, p3.y, p4.x, p4.y});
+            S.line({(int)p3.x, (int)p3.y, (int)p4.x, (int)p4.y});
         }
     }
 }
@@ -245,103 +242,107 @@ void spiralReturnLineSegment(
     }
 }
 
-void cGUI::drawPipeSegment(
+void cGUI::drawPipes(
     wex::shapes &S,
-    const cPipeline &pipesegment)
+    const std::vector<cPipeline> &pipes)
 {
     const int outInSep = cRoom::seperation() + 2;
     int x1, y1, x2, y2, x3, y3, x4, y4;
-    x2 = INT_MAX;
-    cxy lastReturn;
-    cRoom::eCorner corner;
-    bool first = true;
 
-    // loop over pipe bends
-    for (int ip = 0; ip < pipesegment.size(); ip++)
+    for (auto &pipesegment : pipes)
     {
-        cxy p = pipesegment.get(ip);
+        x2 = INT_MAX;
+        cxy lastReturn;
+        cRoom::eCorner corner;
+        bool first = true;
 
-        if (ip == 0)
+        // loop over pipe bends
+        for (int ip = 0; ip < pipesegment.size(); ip++)
         {
-            x2 = off + scale * p.x;
-            y2 = off + scale * p.y;
-            continue;
-        }
-        else
-        {
-            x1 = x2;
-            y1 = y2;
-            x2 = off + (int)(scale * p.x);
-            y2 = off + (int)(scale * p.y);
-            S.color(0x0000FF);
-            S.line({x1, y1, x2, y2});
-            S.color(0);
+            cxy p = pipesegment.get(ip);
 
-            // draw return pipe
-
-            int rx1, ry1, rx2, ry2;
-            if (pipesegment.myType == cPipeline::ePipe::door)
+            if (ip == 0)
             {
-                doorReturnLineSegment(
-                    rx1, ry1, rx2, ry2,
-                    x1, y1, x2, y2,
-                    outInSep);
-            }
-            else if (pipesegment.myType == cPipeline::ePipe::subroom)
-            {
-                std::cout << "subroom spiral return\n";
-
-                if (ip == pipesegment.size() - 1)
-                    corner = cRoom::next(corner);
-                else
-                    corner = cRoom::corner(
-                        pipesegment.get(ip - 1),
-                        p,
-                        pipesegment.get(ip + 1));
-
-                spiralReturnLineSegment(
-                    rx1, ry1, rx2, ry2,
-                    x1, y1, x2, y2,
-                    corner,
-                    outInSep);
-
-                if (first)
-                {
-                    first = false;
-                    rx1 -= 2 * outInSep;
-                }
-                lastReturn = cxy(rx2, ry2);
+                x2 = off + scale * p.x;
+                y2 = off + scale * p.y;
+                continue;
             }
             else
             {
-                if (ip == pipesegment.size() - 1)
-                    corner = cRoom::next(corner);
-                else
-                    corner = cRoom::corner(
-                        pipesegment.get(ip - 1),
-                        p,
-                        pipesegment.get(ip + 1));
-                spiralReturnLineSegment(
-                    rx1, ry1, rx2, ry2,
-                    x1, y1, x2, y2,
-                    corner,
-                    outInSep);
-                lastReturn = cxy(rx2, ry2);
-            }
+                x1 = x2;
+                y1 = y2;
+                x2 = off + (int)(scale * p.x);
+                y2 = off + (int)(scale * p.y);
+                S.color(0x0000FF);
+                S.line({x1, y1, x2, y2});
+                S.color(0);
 
-            S.color(0xFF0000);
-            S.line({rx1, ry1, rx2, ry2});
+                // draw return pipe
+
+                int rx1, ry1, rx2, ry2;
+                if (pipesegment.myType == cPipeline::ePipe::door)
+                {
+                    doorReturnLineSegment(
+                        rx1, ry1, rx2, ry2,
+                        x1, y1, x2, y2,
+                        outInSep);
+                }
+                else if (pipesegment.myType == cPipeline::ePipe::subroom)
+                {
+                    std::cout << "subroom spiral return\n";
+
+                    if (ip == pipesegment.size() - 1)
+                        corner = cRoom::next(corner);
+                    else
+                        corner = cRoom::corner(
+                            pipesegment.get(ip - 1),
+                            p,
+                            pipesegment.get(ip + 1));
+
+                    spiralReturnLineSegment(
+                        rx1, ry1, rx2, ry2,
+                        x1, y1, x2, y2,
+                        corner,
+                        outInSep);
+
+                    if (first)
+                    {
+                        first = false;
+                        rx1 -= 2 * outInSep;
+                    }
+                    lastReturn = cxy(rx2, ry2);
+                }
+                else
+                {
+                    if (ip == pipesegment.size() - 1)
+                        corner = cRoom::next(corner);
+                    else
+                        corner = cRoom::corner(
+                            pipesegment.get(ip - 1),
+                            p,
+                            pipesegment.get(ip + 1));
+                    spiralReturnLineSegment(
+                        rx1, ry1, rx2, ry2,
+                        x1, y1, x2, y2,
+                        corner,
+                        outInSep);
+                    lastReturn = cxy(rx2, ry2);
+                }
+
+                S.color(0xFF0000);
+                S.line({rx1, ry1, rx2, ry2});
+            }
         }
-    }
-    if (pipesegment.myType == cPipeline::ePipe::spiral)
-    {
-        // connect spiral centers
-        // int lastbendindex = pipesegment.size() - 2;
-        x1 = off + scale * pipesegment.last().x;
-        y1 = off + scale * pipesegment.last().y;
-        x2 = lastReturn.x;
-        y2 = lastReturn.y;
-        S.color(0);
-        S.line({x1, y1, x2, y2});
+        if (pipesegment.myType == cPipeline::ePipe::spiral)
+        {
+            // connect spiral centers
+            // int lastbendindex = pipesegment.size() - 2;
+            x1 = off + scale * pipesegment.last().x;
+            y1 = off + scale * pipesegment.last().y;
+            x2 = lastReturn.x;
+            y2 = lastReturn.y;
+            S.color(0);
+            S.line({x1, y1, x2, y2});
+        }
     }
 }

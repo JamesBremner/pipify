@@ -146,9 +146,9 @@ private:
         mb.append("File", mf);
     }
 
-    void drawPipeSegment(
+    void drawPipes(
         wex::shapes &S,
-        const cPipeline& pipesegment);
+        const std::vector<cPipeline> &pipes);
 
     void drawHousePipes(
         wex::shapes &S);

@@ -265,6 +265,12 @@ public:
 
     static void clear();
 
+    /// @brief get next corner type
+    /// @param corner current corner type
+    /// @return next corner type
+    ///
+    /// Assumes convex room specified clockwise
+
     static eCorner next( const eCorner& corner )
     {
         int ret = (int)corner;
