@@ -397,16 +397,82 @@ void cRoom::pipe()
 }
 
 std::pair<cRoom, cRoom> ConcaveSplit(
-    const cRoom &ConcaveRoom)
+    const cRoom &ConcaveRoom,
+    cxy& joinPoint )
 {
     std::pair<cRoom, cRoom> ret;
+    std::pair<cxy, cxy> oppositeWall, newWall;
     int concaveIndex;
+    std::vector<cxy> subRoomWallPoints;
+
+    auto wps = ConcaveRoom.getWallPoints();
+
     eCorner corner = ConcaveRoom.isConcave(concaveIndex);
-    switch( corner ) {
-        default:
-            throw std::runtime_error(
-                "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8"           );
+    cxy concavePoint = ConcaveRoom.getWallDoorPoint(concaveIndex);
+    switch (corner)
+    {
+    case eCorner::tr_cav:
+        oppositeWall = ConcaveRoom.find(eMargin::bottom);
+        newWall = std::make_pair(
+            concavePoint,
+            cxy(concavePoint.x, INT_MAX));
+        cxy::isIntersection(
+            newWall.second,
+            newWall.first, newWall.second,
+            oppositeWall.first, oppositeWall.second);
+
+        for (int ip = 0; ip < wps.size(); ip++)
+        {
+            if (!(wps[ip] == newWall.first))
+                subRoomWallPoints.push_back(wps[ip]);
+            else
+            {
+                while (true)
+                {
+                    ip++; // skip wall points to be cut off by extra wall
+                    if (ip >= wps.size())
+                        throw std::runtime_error("pipeConcave subroom error");
+
+                    if (wps[ip] == oppositeWall.first)
+                    {
+                        subRoomWallPoints.push_back(newWall.second);
+                        break; // continue for remaining wall points
+                    }
+                }
+            }
+        }
+        ret.first = cRoom(
+            "",
+            subRoomWallPoints,
+            ConcaveRoom.getDoorPoints());
+
+        subRoomWallPoints.clear();
+        for (int ip = concaveIndex; true; ip++)
+        {
+            subRoomWallPoints.push_back(wps[ip]);
+
+            if (wps[ip] == oppositeWall.first)
+            {
+                subRoomWallPoints.push_back(newWall.second);
+                break;
+            }
+        }
+        ret.second = cRoom(
+            "",
+            subRoomWallPoints,
+            {});
+
+        joinPoint = wps[concaveIndex];
+        joinPoint.x -= cRoom::seperation();
+        joinPoint.y += cRoom::seperation();
+
+        break;
+
+    default:
+        throw std::runtime_error(
+            "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8");
     }
+    return ret;
 }
 
 void WallBetweenSubrooms(
@@ -454,9 +520,20 @@ void WallBetweenSubrooms(
         lastSkip = temp;
     }
 }
+
 void cRoom::pipeConcave(int concaveIndex)
 {
-    auto subrooms = ConcaveSplit( *this );
+    cxy joinPoint;
+    auto subrooms = ConcaveSplit(*this, joinPoint);
+
+    subrooms.first.pipeConvex();
+    for (auto &l : subrooms.first.myPipePoints)
+        myPipePoints.push_back(l);
+    subrooms.second.pipeConvex(joinPoint.x, joinPoint.y);
+    for (auto &l : subrooms.second.myPipePoints)
+        myPipePoints.push_back(l);
+
+    return;
 
     auto cornerType = isConcave(concaveIndex);
     // switch (cornerType)
@@ -524,348 +601,348 @@ void cRoom::pipeConcave(int concaveIndex)
     startPoint.y += theSeperation;
     subRoom2.pipeConvex(startPoint.x, startPoint.y);
     for (auto &l : subRoom2.myPipePoints)
-            {
-                l.set(cPipeline::ePipe::subroom);
-                myPipePoints.push_back(l);
-            }
-            // }
-            // break;
-            // }
-        }
-        void cRoom::pipeConvex(int x, int y)
+    {
+        l.set(cPipeline::ePipe::subroom);
+        myPipePoints.push_back(l);
+    }
+    // }
+    // break;
+    // }
+}
+void cRoom::pipeConvex(int x, int y)
+{
+    int spiralStartCornerIndex;
+
+    cxy spiralStartPoint(x, y);
+    if (myDoorPoints.size())
+    {
+        // layout pipes through the door to the furnace room
+        pipeDoor();
+
+        spiralStartCornerIndex = myDoorPoints[0] + 2;
+        if (spiralStartCornerIndex == myWallPoints.size())
+            spiralStartCornerIndex = 0;
+
+        // start where the door pipes finished
+        spiralStartPoint = myPipePoints.back().last();
+    }
+    else
+    {
+        // there is no door
+        // this must be a subroom, part of a concave room
+        // start at nearest pipe in first subroom
+
+        spiralStartCornerIndex = 1;
+    }
+
+    auto spiral = pipeSpiral(
+        spiralStartCornerIndex,
+        spiralStartPoint);
+
+    myPipePoints.emplace_back(
+        cPipeline::ePipe::spiral,
+        spiral);
+}
+
+void cRoom::boundingRectangle()
+{
+    myXmin = INT_MAX;
+    myXmax = -1;
+    myYmin = INT_MAX;
+    myYmax = -1;
+    for (auto &p : myWallPoints)
+    {
+        if (p.x < myXmin)
+            myXmin = p.x;
+        if (p.x > myXmax)
+            myXmax = p.x;
+        if (p.y < myYmin)
+            myYmin = p.y;
+        if (p.y > myYmax)
+            myYmax = p.y;
+    }
+    double xrange = myXmax - myXmin;
+    double yrange = myYmax - myYmin;
+    myMaxDim = xrange;
+    if (yrange > xrange)
+        myMaxDim = yrange;
+}
+
+std::vector<cxy> cRoom::pipeSpiral(
+    int startIndex,
+    const cxy &startPoint)
+{
+    // construct closed polygon without doors
+    cCorners corners(*this);
+    startIndex = corners.index(startIndex);
+    std::vector<cxy> noDoors = corners.getCorners();
+
+    // start spiral
+    std::vector<cxy> spiral;
+    spiral.push_back(startPoint);
+
+    int wallSeperation = theSeperation;
+
+    for (int cornerIndex = startIndex; true; cornerIndex++)
+    {
+        if (cornerIndex == noDoors.size() - 1)
         {
-            int spiralStartCornerIndex;
-
-            cxy spiralStartPoint(x, y);
-            if (myDoorPoints.size())
-            {
-                // layout pipes through the door to the furnace room
-                pipeDoor();
-
-                spiralStartCornerIndex = myDoorPoints[0] + 2;
-                if (spiralStartCornerIndex == myWallPoints.size())
-                    spiralStartCornerIndex = 0;
-
-                // start where the door pipes finished
-                spiralStartPoint = myPipePoints.back().last();
-            }
-            else
-            {
-                // there is no door
-                // this must be a subroom, part of a concave room
-                // start at nearest pipe in first subroom
-
-                spiralStartCornerIndex = 1;
-            }
-
-            auto spiral = pipeSpiral(
-                spiralStartCornerIndex,
-                spiralStartPoint);
-
-            myPipePoints.emplace_back(
-                cPipeline::ePipe::spiral,
-                spiral);
+            // wrap around noDoors
+            cornerIndex = 0;
         }
 
-        void cRoom::boundingRectangle()
+        bool fspiralwrap = false;
+        if (startIndex == 0)
         {
-            myXmin = INT_MAX;
-            myXmax = -1;
-            myYmin = INT_MAX;
-            myYmax = -1;
-            for (auto &p : myWallPoints)
-            {
-                if (p.x < myXmin)
-                    myXmin = p.x;
-                if (p.x > myXmax)
-                    myXmax = p.x;
-                if (p.y < myYmin)
-                    myYmin = p.y;
-                if (p.y > myYmax)
-                    myYmax = p.y;
-            }
-            double xrange = myXmax - myXmin;
-            double yrange = myYmax - myYmin;
-            myMaxDim = xrange;
-            if (yrange > xrange)
-                myMaxDim = yrange;
+            if (cornerIndex == 0)
+                fspiralwrap = true;
+        }
+        else
+        {
+            if (cornerIndex == startIndex - 1)
+                fspiralwrap = true;
+        }
+        if (fspiralwrap)
+        {
+            // wrap around spiral
+            wallSeperation += theSeperation;
+            fspiralwrap = true;
         }
 
-        std::vector<cxy> cRoom::pipeSpiral(
-            int startIndex,
-            const cxy &startPoint)
+        cxy p1, bend, p3;
+        if (cornerIndex == 0)
+            p1 = noDoors[noDoors.size() - 1];
+        else
         {
-            // construct closed polygon without doors
-            cCorners corners(*this);
-            startIndex = corners.index(startIndex);
-            std::vector<cxy> noDoors = corners.getCorners();
+            p1 = noDoors[cornerIndex - 1];
+        }
+        bend = noDoors[cornerIndex];
+        p3 = noDoors[cornerIndex + 1];
 
-            // start spiral
-            std::vector<cxy> spiral;
-            spiral.push_back(startPoint);
+        // std::cout << cornerIndex << " " << bend.x << " " << bend.y
+        //           << " " << wallSeperation << "\n";
 
-            int wallSeperation = theSeperation;
-
-            for (int cornerIndex = startIndex; true; cornerIndex++)
-            {
-                if (cornerIndex == noDoors.size() - 1)
-                {
-                    // wrap around noDoors
-                    cornerIndex = 0;
-                }
-
-                bool fspiralwrap = false;
-                if (startIndex == 0)
-                {
-                    if (cornerIndex == 0)
-                        fspiralwrap = true;
-                }
-                else
-                {
-                    if (cornerIndex == startIndex - 1)
-                        fspiralwrap = true;
-                }
-                if (fspiralwrap)
-                {
-                    // wrap around spiral
-                    wallSeperation += theSeperation;
-                    fspiralwrap = true;
-                }
-
-                cxy p1, bend, p3;
-                if (cornerIndex == 0)
-                    p1 = noDoors[noDoors.size() - 1];
-                else
-                {
-                    p1 = noDoors[cornerIndex - 1];
-                }
-                bend = noDoors[cornerIndex];
-                p3 = noDoors[cornerIndex + 1];
-
-                // std::cout << cornerIndex << " " << bend.x << " " << bend.y
-                //           << " " << wallSeperation << "\n";
-
-                switch (corner(p1, bend, p3))
-                {
-                case eCorner::tr_vex:
-                    bend.x -= wallSeperation;
-                    bend.y += wallSeperation;
-                    if (fspiralwrap)
-                        bend.y -= theSeperation;
-                    break;
-                case eCorner::br_vex:
-                    bend.x -= wallSeperation;
-                    bend.y -= wallSeperation;
-                    if (fspiralwrap)
-                        bend.x += theSeperation;
-                    break;
-                case eCorner::bl_vex:
-                    bend.x += wallSeperation;
-                    bend.y -= wallSeperation;
-                    if (fspiralwrap)
-                        bend.y += wallSeperation;
-                    break;
-                case eCorner::tl_vex:
-                    bend.x += wallSeperation;
-                    bend.y += wallSeperation;
-                    if (fspiralwrap)
-                        bend.x -= theSeperation;
-                    break;
-                default:
-                    throw std::runtime_error(
-                        "pipeSpiral bad corner");
-                }
-                // check if spiral has become vanishingly small
-                if (isSpiralComplete(spiral, wallSeperation, bend))
-                    return spiral;
-            }
-
+        switch (corner(p1, bend, p3))
+        {
+        case eCorner::tr_vex:
+            bend.x -= wallSeperation;
+            bend.y += wallSeperation;
+            if (fspiralwrap)
+                bend.y -= theSeperation;
+            break;
+        case eCorner::br_vex:
+            bend.x -= wallSeperation;
+            bend.y -= wallSeperation;
+            if (fspiralwrap)
+                bend.x += theSeperation;
+            break;
+        case eCorner::bl_vex:
+            bend.x += wallSeperation;
+            bend.y -= wallSeperation;
+            if (fspiralwrap)
+                bend.y += wallSeperation;
+            break;
+        case eCorner::tl_vex:
+            bend.x += wallSeperation;
+            bend.y += wallSeperation;
+            if (fspiralwrap)
+                bend.x -= theSeperation;
+            break;
+        default:
+            throw std::runtime_error(
+                "pipeSpiral bad corner");
+        }
+        // check if spiral has become vanishingly small
+        if (isSpiralComplete(spiral, wallSeperation, bend))
             return spiral;
-        }
-        bool cRoom::isSpiralComplete(
-            std::vector<cxy> & spiral,
-            int wallSeperation,
-            const cxy &nextbend) const
+    }
+
+    return spiral;
+}
+bool cRoom::isSpiralComplete(
+    std::vector<cxy> &spiral,
+    int wallSeperation,
+    const cxy &nextbend) const
+{
+    if (!spiral.size())
+    {
+        spiral.push_back(nextbend);
+        return false;
+    }
+
+    // distance squared from last pipe point to new point
+    double d2 = spiral.back().dist2(nextbend);
+
+    // std::cout << d2 <<" "<< wallSeperation<< "\n";
+
+    if (d2 < theSeperation * theSeperation)
+        return true;
+
+    if (wallSeperation > myMaxDim / 2)
+        return true;
+
+    // keep going
+    spiral.push_back(nextbend);
+    return false;
+}
+
+void cRoom::readfile(const std::string &fname)
+{
+    std::ifstream ifs(fname);
+    if (!ifs.is_open())
+        throw std::runtime_error(
+            "Cannot open file " + fname);
+
+    std::string line, name, furnaceRoomName;
+    std::vector<cxy> wallPoints;
+    std::vector<int> doorPoints;
+
+    clear();
+
+    while (getline(ifs, line))
+    {
+        if (!line.length())
+            continue;
+        if (line.find("//") == 0)
+            break;
+
+        int p = line.find("room");
+        if (p == 0)
         {
-            if (!spiral.size())
+            // new room specified
+
+            if (wallPoints.size())
             {
-                spiral.push_back(nextbend);
-                return false;
+                // save previous room
+                add(name, wallPoints, doorPoints);
             }
 
-            // distance squared from last pipe point to new point
-            double d2 = spiral.back().dist2(nextbend);
-
-            // std::cout << d2 <<" "<< wallSeperation<< "\n";
-
-            if (d2 < theSeperation * theSeperation)
-                return true;
-
-            if (wallSeperation > myMaxDim / 2)
-                return true;
-
-            // keep going
-            spiral.push_back(nextbend);
-            return false;
+            // clear new room specs
+            wallPoints.clear();
+            doorPoints.clear();
+            name = line.substr(5);
+            continue;
         }
 
-        void cRoom::readfile(const std::string &fname)
+        p = line.find("furnace");
+        if (p == 0)
         {
-            std::ifstream ifs(fname);
-            if (!ifs.is_open())
+            p = line.find(" ");
+            furnaceRoomName = line.substr(p + 1);
+            continue;
+        }
+
+        p = line.find(" ");
+        if (p != -1)
+        {
+            wallPoints.emplace_back(
+                atof(line.c_str()), atof(line.substr(p + 1).c_str()));
+        }
+        else
+        {
+            doorPoints.push_back(atoi(line.c_str()));
+        }
+    }
+
+    // save last room
+    add(name, wallPoints, doorPoints);
+
+    set(6); // pipe seperation
+
+    furnaceRoom(furnaceRoomName);
+}
+
+void cRoom::furnaceRoom(const std::string &name)
+{
+    // error if no furnace room specified
+    if (!name.length())
+        throw std::runtime_error("Unspecified furnace room");
+
+    // allow house with no furnace room only when testing
+    if (name == "test")
+    {
+        thefurnaceRoomIndex = -1;
+        return;
+    }
+
+    // check that the furnace room walls and doors have been specified
+    auto it = std::find_if(theHouse.begin(), theHouse.end(),
+                           [&](cRoom &room) -> bool
+                           {
+                               return (room.myName == name);
+                           });
+    if (it == theHouse.end())
+        throw std::runtime_error("Unspecified furnace room " + name);
+
+    // store index to furnace room
+    thefurnaceRoomIndex = it - theHouse.begin();
+
+    // check that there are enough doors in the furnace room
+    // to reach every other room
+    if (theHouse.size() - 1 > theHouse[thefurnaceRoomIndex].doorCount())
+        throw std::runtime_error("Not enough doors in furnace room");
+
+    // check that other rooms have exactly one door TID5
+    for (auto &r : theHouse)
+        if (r.myName != name)
+            if (r.doorCount() != 1)
                 throw std::runtime_error(
-                    "Cannot open file " + fname);
+                    "every room must have exactly one door");
 
-            std::string line, name, furnaceRoomName;
-            std::vector<cxy> wallPoints;
-            std::vector<int> doorPoints;
+    // TODO: check every room connected directly to furnace room TID3
+}
 
-            clear();
+cCorners::cCorners(const cRoom &room)
+{
+    myCorners.clear();
 
-            while (getline(ifs, line))
-            {
-                if (!line.length())
-                    continue;
-                if (line.find("//") == 0)
-                    break;
+    auto dps = room.getDoorPoints();
+    int nextDoorIndex = 0;
+    if (!dps.size())
+    {
+        // room has no doors
+        // e.g subroom in a concave room
+        dps.push_back(-1);
+    }
 
-                int p = line.find("room");
-                if (p == 0)
-                {
-                    // new room specified
+    const auto &wps = room.getWallPoints();
 
-                    if (wallPoints.size())
-                    {
-                        // save previous room
-                        add(name, wallPoints, doorPoints);
-                    }
-
-                    // clear new room specs
-                    wallPoints.clear();
-                    doorPoints.clear();
-                    name = line.substr(5);
-                    continue;
-                }
-
-                p = line.find("furnace");
-                if (p == 0)
-                {
-                    p = line.find(" ");
-                    furnaceRoomName = line.substr(p + 1);
-                    continue;
-                }
-
-                p = line.find(" ");
-                if (p != -1)
-                {
-                    wallPoints.emplace_back(
-                        atof(line.c_str()), atof(line.substr(p + 1).c_str()));
-                }
-                else
-                {
-                    doorPoints.push_back(atoi(line.c_str()));
-                }
-            }
-
-            // save last room
-            add(name, wallPoints, doorPoints);
-
-            set(6); // pipe seperation
-
-            furnaceRoom(furnaceRoomName);
-        }
-
-        void cRoom::furnaceRoom(const std::string &name)
+    // loop over wall points
+    for (int i = 0; i < wps.size(); i++)
+    {
+        if (i == dps[nextDoorIndex])
         {
-            // error if no furnace room specified
-            if (!name.length())
-                throw std::runtime_error("Unspecified furnace room");
-
-            // allow house with no furnace room only when testing
-            if (name == "test")
+            // skip door points
+            i++;
+            i++;
+            if (i >= wps.size())
+                break;
+            nextDoorIndex++;
+            if (nextDoorIndex == dps.size())
             {
-                thefurnaceRoomIndex = -1;
-                return;
+                // no more doors
+                nextDoorIndex = -1;
             }
-
-            // check that the furnace room walls and doors have been specified
-            auto it = std::find_if(theHouse.begin(), theHouse.end(),
-                                   [&](cRoom &room) -> bool
-                                   {
-                                       return (room.myName == name);
-                                   });
-            if (it == theHouse.end())
-                throw std::runtime_error("Unspecified furnace room " + name);
-
-            // store index to furnace room
-            thefurnaceRoomIndex = it - theHouse.begin();
-
-            // check that there are enough doors in the furnace room
-            // to reach every other room
-            if (theHouse.size() - 1 > theHouse[thefurnaceRoomIndex].doorCount())
-                throw std::runtime_error("Not enough doors in furnace room");
-
-            // check that other rooms have exactly one door TID5
-            for (auto &r : theHouse)
-                if (r.myName != name)
-                    if (r.doorCount() != 1)
-                        throw std::runtime_error(
-                            "every room must have exactly one door");
-
-            // TODO: check every room connected directly to furnace room TID3
         }
+        myIndices.push_back(i);
+        myCorners.push_back(wps[i]);
+    }
+    // close polygon
+    myCorners.push_back(wps[0]);
+}
 
-        cCorners::cCorners(const cRoom &room)
-        {
-            myCorners.clear();
+int cCorners::index(int wp) const
+{
+    auto it = std::find(
+        myIndices.begin(), myIndices.end(),
+        wp);
+    if (it == myIndices.end())
+        return -1;
+    return it - myIndices.begin();
+}
 
-            auto dps = room.getDoorPoints();
-            int nextDoorIndex = 0;
-            if (!dps.size())
-            {
-                // room has no doors
-                // e.g subroom in a concave room
-                dps.push_back(-1);
-            }
-
-            const auto &wps = room.getWallPoints();
-
-            // loop over wall points
-            for (int i = 0; i < wps.size(); i++)
-            {
-                if (i == dps[nextDoorIndex])
-                {
-                    // skip door points
-                    i++;
-                    i++;
-                    if (i >= wps.size())
-                        break;
-                    nextDoorIndex++;
-                    if (nextDoorIndex == dps.size())
-                    {
-                        // no more doors
-                        nextDoorIndex = -1;
-                    }
-                }
-                myIndices.push_back(i);
-                myCorners.push_back(wps[i]);
-            }
-            // close polygon
-            myCorners.push_back(wps[0]);
-        }
-
-        int cCorners::index(int wp) const
-        {
-            auto it = std::find(
-                myIndices.begin(), myIndices.end(),
-                wp);
-            if (it == myIndices.end())
-                return -1;
-            return it - myIndices.begin();
-        }
-
-        main()
-        {
-            cGUI theGUI;
-            return 0;
-        }
+main()
+{
+    cGUI theGUI;
+    return 0;
+}

@@ -343,6 +343,7 @@ void WallBetweenSubrooms(
 /// @return pair of convex rooms
 
 std::pair<cRoom,cRoom> ConcaveSplit(
-    const cRoom& ConcaveRoom );
+    const cRoom& ConcaveRoom,
+    cxy& joinPoint );
 
 

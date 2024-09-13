@@ -27,10 +27,17 @@ bool unitTest()
         return false;
 
     cRoom::readfile("../dat/L.text");
-    ConcaveSplit( cRoom::getRooms()[0] );
+    cxy jointPoint;
+    auto subRooms = ConcaveSplit( 
+        cRoom::getRooms()[0],
+        jointPoint );
+    subRooms.first.pipeConvex();
+    subRooms.second.pipeConvex();
 
     cRoom::readfile("../dat/L2.text");
-    ConcaveSplit( cRoom::getRooms()[0] );
+    ConcaveSplit( 
+        cRoom::getRooms()[0],
+        jointPoint );
 
 
 
