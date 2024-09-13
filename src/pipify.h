@@ -1,7 +1,31 @@
 #include <vector>
 #include <string>
+#include <algorithm>
 #include "cxy.h"
 
+enum class eCorner
+{
+    error,
+    tl_vex, // top left convex
+    tr_vex,
+    br_vex,
+    bl_vex,
+    tr_cav, // top right concave
+    tl_cav,
+    bl_cav,
+    br_cav,
+    top, // no corner, along top
+    right,
+    bottom,
+    left,
+};
+    enum class eMargin
+    {
+        top,
+        right,
+        bottom,
+        left
+    };
 class cPipeline
 {
 public:
@@ -73,6 +97,8 @@ public:
         const std::vector<cxy> wallPoints,
         const std::vector<int> doorPoints);
 
+    cRoom() {}
+
     /// @brief get the wall segments, ready to draw the room wall
     /// @return
     std::vector<std::vector<cxy>> wallSegments();
@@ -89,34 +115,26 @@ public:
     {
         return myWallPoints;
     }
+    const cxy& getWallDoorPoint( int index ) const
+    {
+        if( index < 0 || index > myWallPoints.size()-1)
+            throw std::runtime_error("getWallDoorPoint");
+        return myWallPoints[ index ];
+    }
+    int getWallDoorIndex( const cxy& p ) const
+    {
+        auto it = std::find(
+            myWallPoints.begin(),myWallPoints.end(), p        );
+        if( it == myWallPoints.end())
+            return -1;
+        return it - myWallPoints.begin();
+    }
     std::vector<int> getDoorPoints() const
     {
         return myDoorPoints;
     }
 
-    enum class eMargin
-    {
-        top,
-        right,
-        bottom,
-        left
-    };
-    enum class eCorner
-    {
-        error,
-        tl_vex, // top left convex
-        tr_vex,
-        br_vex,
-        bl_vex,
-        tr_cav, // top right concave
-        tl_cav,
-        bl_cav,
-        br_cav,
-        top, // no corner, along top
-        right,
-        bottom,
-        left,
-    };
+
 
     /// @brief which side of the room are two points on
     /// @param p1
@@ -282,11 +300,6 @@ public:
 private:
     void boundingRectangle();
 
-void WallBetweenSubrooms(
-        cxy& lastSkip, cxy& newPoint,
-        eCorner type,
-        int concaveIndex);
-
     std::vector<cxy> pipeSpiral(
         int startIndex,
         const cxy &startPoint);
@@ -318,3 +331,18 @@ public:
 // free functions
 
 bool unitTest();
+
+void WallBetweenSubrooms(
+    const cRoom &room,
+    cxy &lastSkip, cxy &newPoint,
+    eCorner type,
+    int concaveIndex);
+
+/// @brief Split concave room into two convex rooms
+/// @param ConcaveRoom 
+/// @return pair of convex rooms
+
+std::pair<cRoom,cRoom> ConcaveSplit(
+    const cRoom& ConcaveRoom );
+
+

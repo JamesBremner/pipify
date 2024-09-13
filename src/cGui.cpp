@@ -83,7 +83,7 @@ void cGUI::drawFurnacePipes(
             switch (cRoom::side(p1, p2))
             {
 
-            case cRoom::eMargin::top:
+            case eMargin::top:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
                     p3.x = p1.x + retSep;
@@ -101,7 +101,7 @@ void cGUI::drawFurnacePipes(
                 }
                 break;
 
-            case cRoom::eMargin::right:
+            case eMargin::right:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
                     p3.x = p1.x - retSep;
@@ -119,7 +119,7 @@ void cGUI::drawFurnacePipes(
                 }
                 break;
 
-            case cRoom::eMargin::bottom:
+            case eMargin::bottom:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
                     p3.x = p1.x - retSep;
@@ -137,7 +137,7 @@ void cGUI::drawFurnacePipes(
                     p4.y += retSep;
                 }
                 break;
-            case cRoom::eMargin::left:
+            case eMargin::left:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
                     p3.x = p1.x + retSep;
@@ -168,25 +168,25 @@ void doorReturnLineSegment(
 {
     switch (cRoom::side(cxy(x1, y1), cxy(x2, y2)))
     {
-    case cRoom::eMargin::top:
+    case eMargin::top:
         rx1 = x1 - sep;
         ry1 = y1 + sep;
         rx2 = x2 + sep;
         ry2 = y1 + sep;
         break;
-    case cRoom::eMargin::right:
+    case eMargin::right:
         rx1 = x1 - sep;
         ry1 = y1 - sep;
         rx2 = x2 - sep;
         ry2 = y2 + sep;
         break;
-    case cRoom::eMargin::bottom:
+    case eMargin::bottom:
         rx1 = x1;
         ry1 = y1 - sep;
         rx2 = x2 - sep;
         ry2 = y2 - sep;
         break;
-    case cRoom::eMargin::left:
+    case eMargin::left:
         rx1 = x1 + sep;
         ry1 = y1;
         rx2 = x2 + sep;
@@ -204,36 +204,36 @@ void doorReturnLineSegment(
 void spiralReturnLineSegment(
     int &rx1, int &ry1, int &rx2, int &ry2,
     int x1, int y1, int x2, int y2,
-    cRoom::eCorner corner,
+    eCorner corner,
     int sep)
 {
     switch (corner)
     {
-    case cRoom::eCorner::tl_vex:
+    case eCorner::tl_vex:
         rx1 = x1 + sep;
         ry1 = y1 - sep;
         rx2 = x2 + sep;
         ry2 = y2 + sep;
         break;
-    case cRoom::eCorner::tr_vex:
+    case eCorner::tr_vex:
         rx1 = x1 + sep;
         ry1 = y1 + sep;
         rx2 = x2 - sep;
         ry2 = y2 + sep;
         break;
-    case cRoom::eCorner::br_vex:
+    case eCorner::br_vex:
         rx1 = x1 - sep;
         ry1 = y1 + sep;
         rx2 = x2 - sep;
         ry2 = y2 - sep;
         break;
-    case cRoom::eCorner::bl_vex:
+    case eCorner::bl_vex:
         rx1 = x1 - sep;
         ry1 = y1 - sep;
         rx2 = x2 + sep;
         ry2 = y2 - sep;
         break;
-    case cRoom::eCorner::error:
+    case eCorner::error:
         // if (p.y == pipesegment[ip - 1].y)
         // {
         //     S.line({x1, y1 + outInSep, x2 + outInSep, y2 + outInSep});
@@ -253,7 +253,7 @@ void cGUI::drawPipes(
     {
         x2 = INT_MAX;
         cxy lastReturn;
-        cRoom::eCorner corner;
+        eCorner corner;
         bool first = true;
 
         // loop over pipe bends
