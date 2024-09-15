@@ -398,12 +398,12 @@ void cRoom::pipe()
 
 std::pair<cRoom, cRoom> ConcaveSplit(
     const cRoom &ConcaveRoom,
-    cxy& joinPoint )
+    cxy &joinPoint)
 {
     std::pair<cRoom, cRoom> ret;
     std::pair<cxy, cxy> oppositeWall, newWall;
     int concaveIndex;
-    std::vector<cxy> subRoomWallPoints;
+    std::vector<cxy> subRoom1Wall, subRoom2Wall;
 
     auto wps = ConcaveRoom.getWallPoints();
 
@@ -424,7 +424,7 @@ std::pair<cRoom, cRoom> ConcaveSplit(
         for (int ip = 0; ip < wps.size(); ip++)
         {
             if (!(wps[ip] == newWall.first))
-                subRoomWallPoints.push_back(wps[ip]);
+                subRoom1Wall.push_back(wps[ip]);
             else
             {
                 while (true)
@@ -435,32 +435,23 @@ std::pair<cRoom, cRoom> ConcaveSplit(
 
                     if (wps[ip] == oppositeWall.first)
                     {
-                        subRoomWallPoints.push_back(newWall.second);
+                        subRoom1Wall.push_back(newWall.second);
                         break; // continue for remaining wall points
                     }
                 }
             }
         }
-        ret.first = cRoom(
-            "",
-            subRoomWallPoints,
-            ConcaveRoom.getDoorPoints());
 
-        subRoomWallPoints.clear();
         for (int ip = concaveIndex; true; ip++)
         {
-            subRoomWallPoints.push_back(wps[ip]);
+            subRoom2Wall.push_back(wps[ip]);
 
             if (wps[ip] == oppositeWall.first)
             {
-                subRoomWallPoints.push_back(newWall.second);
+                subRoom2Wall.push_back(newWall.second);
                 break;
             }
         }
-        ret.second = cRoom(
-            "",
-            subRoomWallPoints,
-            {});
 
         joinPoint = wps[concaveIndex];
         joinPoint.x -= cRoom::seperation();
@@ -468,147 +459,89 @@ std::pair<cRoom, cRoom> ConcaveSplit(
 
         break;
 
+    case eCorner::tl_cav:
+        oppositeWall = ConcaveRoom.find(eMargin::bottom);
+        newWall = std::make_pair(
+            concavePoint,
+            cxy(concavePoint.x, INT_MAX));
+        cxy::isIntersection(
+            newWall.second,
+            newWall.first, newWall.second,
+            oppositeWall.first, oppositeWall.second);
+
+        for (int ip = 0; ip < wps.size(); ip++)
+        {
+            subRoom1Wall.push_back(wps[ip]);
+            if (wps[ip] == oppositeWall.first) // !!!!!!
+            {
+
+                while (true)
+                {
+                    ip++; // skip wall points to be cut off by extra wall
+                    if (ip >= wps.size())
+                        throw std::runtime_error("pipeConcave subroom error");
+
+                    if (ip == concaveIndex)
+                    {
+                        subRoom1Wall.push_back(newWall.second);
+                        break;
+                    }
+                }
+                if (ip == concaveIndex)
+                    break;
+            }
+        }
+
+        subRoom2Wall.clear();
+        subRoom2Wall.push_back(newWall.first);
+        subRoom2Wall.push_back(newWall.second);
+        subRoom2Wall.push_back(oppositeWall.second);
+        subRoom2Wall.push_back(wps[concaveIndex - 1]);
+
+        joinPoint = newWall.second;
+        joinPoint.x += cRoom::seperation();
+        joinPoint.y -= cRoom::seperation();
+
+        break;
+
     default:
         throw std::runtime_error(
             "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8");
     }
+
+    ret.first = cRoom(
+        "",
+        subRoom1Wall,
+        ConcaveRoom.getDoorPoints());
+    ret.second = cRoom(
+        "",
+        subRoom2Wall,
+        {});
+
     return ret;
 }
 
-void WallBetweenSubrooms(
-    const cRoom &room,
-    cxy &firstSkip, cxy &lastSkip, cxy &newPoint,
-    eCorner type,
-    int concaveIndex)
-{
-    cxy eWallMax;
-    std::pair<cxy, cxy> oppositeWall;
-    std::pair<cxy, cxy> wall;
 
-    switch (type)
-    {
-    case eCorner::tr_cav:
-        oppositeWall = room.find(eMargin::bottom);
-        lastSkip = oppositeWall.first;
-        wall.first = room.getWallDoorPoint(concaveIndex);
-        eWallMax = cxy(wall.first.x, INT_MAX);
-        cxy::isIntersection(
-            newPoint,
-            wall.first, eWallMax,
-            oppositeWall.first, oppositeWall.second);
-        break;
-    case eCorner::tl_cav:
-        oppositeWall = room.find(eMargin::bottom);
-        lastSkip = oppositeWall.second;
-        wall.first = room.getWallDoorPoint(concaveIndex);
-        eWallMax = cxy(wall.first.x, INT_MAX);
-        cxy::isIntersection(
-            newPoint,
-            wall.first, eWallMax,
-            oppositeWall.first, oppositeWall.second);
-        break;
-    default:
-        throw std::runtime_error("WallBetweenSubrooms bad type");
-    }
-    firstSkip = wall.first;
-    if (
-        room.getWallDoorIndex(firstSkip) >
-        room.getWallDoorIndex(lastSkip))
-    {
-        cxy temp = firstSkip;
-        firstSkip = lastSkip;
-        lastSkip = temp;
-    }
-}
 
 void cRoom::pipeConcave(int concaveIndex)
 {
+    // split concave room into 2 convex rooms
     cxy joinPoint;
     auto subrooms = ConcaveSplit(*this, joinPoint);
 
+    // pipe first subroom
     subrooms.first.pipeConvex();
     for (auto &l : subrooms.first.myPipePoints)
         myPipePoints.push_back(l);
+
+    // pipe 2nd subroom
     subrooms.second.pipeConvex(joinPoint.x, joinPoint.y);
     for (auto &l : subrooms.second.myPipePoints)
         myPipePoints.push_back(l);
 
     return;
-
-    auto cornerType = isConcave(concaveIndex);
-    // switch (cornerType)
-    // {
-
-    // case eCorner::tr_cav:
-    // {
-
-    cxy firstSkip, lastSkip, newPoint;
-    WallBetweenSubrooms(
-        *this,
-        firstSkip, lastSkip, newPoint,
-        cornerType, concaveIndex);
-
-    std::vector<cxy> subRoomWallPoints;
-    for (int ip = 0; ip < myWallPoints.size(); ip++)
-    {
-        if (!(myWallPoints[ip] == firstSkip))
-            subRoomWallPoints.push_back(myWallPoints[ip]);
-        else
-        {
-            while (true)
-            {
-                ip++; // skip wall points to be cut off by extra wall
-                if (ip >= myWallPoints.size())
-                    throw std::runtime_error("pipeConcave subroom error");
-
-                if (myWallPoints[ip] == lastSkip)
-                {
-                    subRoomWallPoints.push_back(newPoint);
-                    break; // continue for remaining wall points
-                }
-            }
-        }
-    }
-    std::cout << "constructing subroom \n";
-    cRoom subRoom(
-        "",
-        subRoomWallPoints,
-        myDoorPoints);
-    subRoom.pipeConvex();
-    for (auto &l : subRoom.myPipePoints)
-        myPipePoints.push_back(l);
-
-    subRoomWallPoints.clear();
-    std::vector<int> subRoomDoorPoints;
-
-    for (int ip = concaveIndex; true; ip++)
-    {
-        subRoomWallPoints.push_back(myWallPoints[ip]);
-
-        if (myWallPoints[ip] == lastSkip)
-        {
-            subRoomWallPoints.push_back(newPoint);
-            break;
-        }
-    }
-
-    cRoom subRoom2(
-        "",
-        subRoomWallPoints,
-        subRoomDoorPoints);
-    cxy startPoint = myWallPoints[concaveIndex];
-    startPoint.x -= theSeperation;
-    startPoint.y += theSeperation;
-    subRoom2.pipeConvex(startPoint.x, startPoint.y);
-    for (auto &l : subRoom2.myPipePoints)
-    {
-        l.set(cPipeline::ePipe::subroom);
-        myPipePoints.push_back(l);
-    }
-    // }
-    // break;
-    // }
 }
+
 void cRoom::pipeConvex(int x, int y)
 {
     int spiralStartCornerIndex;
@@ -687,7 +620,7 @@ std::vector<cxy> cRoom::pipeSpiral(
     {
         if (cornerIndex == noDoors.size() - 1)
         {
-            // wrap around noDoors
+            std::cout << "// wrap around noDoors";
             cornerIndex = 0;
         }
 
@@ -704,14 +637,14 @@ std::vector<cxy> cRoom::pipeSpiral(
         }
         if (fspiralwrap)
         {
-            // wrap around spiral
+            std::cout << "// wrap around spiral\n";
             wallSeperation += theSeperation;
             fspiralwrap = true;
         }
 
         cxy p1, bend, p3;
         if (cornerIndex == 0)
-            p1 = noDoors[noDoors.size() - 1];
+            p1 = noDoors[noDoors.size() - 2];
         else
         {
             p1 = noDoors[cornerIndex - 1];
@@ -719,8 +652,11 @@ std::vector<cxy> cRoom::pipeSpiral(
         bend = noDoors[cornerIndex];
         p3 = noDoors[cornerIndex + 1];
 
-        // std::cout << cornerIndex << " " << bend.x << " " << bend.y
-        //           << " " << wallSeperation << "\n";
+        std::cout << cornerIndex
+                  << " " << p1.x << " " << p1.y
+                  << ", " << bend.x << " " << bend.y
+                  << ", " << p3.x << " " << p3.y
+                  << "\n";
 
         switch (corner(p1, bend, p3))
         {

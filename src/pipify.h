@@ -332,14 +332,9 @@ public:
 
 bool unitTest();
 
-void WallBetweenSubrooms(
-    const cRoom &room,
-    cxy &lastSkip, cxy &newPoint,
-    eCorner type,
-    int concaveIndex);
-
 /// @brief Split concave room into two convex rooms
-/// @param ConcaveRoom 
+/// @param[in] ConcaveRoom to be split
+/// @param[out] joinPoint where the 2nd room pipe joins the first room pipe
 /// @return pair of convex rooms
 
 std::pair<cRoom,cRoom> ConcaveSplit(
