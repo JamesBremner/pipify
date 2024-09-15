@@ -2,6 +2,68 @@
 #include "pipify.h"
 #include "cGUI.h"
 
+void cGUI::menus()
+{
+    wex::menubar mb(fm);
+
+    wex::menu mf(fm);
+    mf.append("Open", [&](const std::string &title)
+              {
+        // prompt for file to open
+        wex::filebox fb( fm );
+        auto paths = fb.open();
+        if( paths.empty() )
+            return;
+        try
+        {
+            // read the file
+            cRoom::readfile( paths );
+
+            fm.text( paths);
+
+            // refresh display with contents of opened file
+            fm.update();
+        }
+        catch( std::runtime_error& e )
+        {
+            wex::msgbox mb(
+                           std::string("Error reading file\n")+e.what());
+            exit(1);
+        } });
+
+    mb.append("File", mf);
+
+    wex::menu mr(fm);
+    mr.append("Pipes",
+              [&](const std::string &title)
+              {
+                  try
+                  {
+                      cRoom::pipeHouse();
+                  }
+                  catch (std::runtime_error &e)
+                  {
+                      wex::msgbox(
+                          std::string("Error running pipes ") + e.what());
+
+                      exit(1);
+                  }
+                   fm.update();
+              });
+    mr.append("Unit Tests",
+              [&](const std::string &title)
+              {
+                  if (!unitTest())
+                  {
+                      wex::msgbox mb("unit test failed");
+                      exit(1);
+                  }
+                  wex::msgbox mb("unit test passed");
+              });
+
+    mb.append("Run", mr);
+}
+
 void cGUI::drawHousePipes(
     wex::shapes &S)
 {

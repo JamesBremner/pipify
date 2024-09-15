@@ -96,55 +96,7 @@ private:
     const int scale = 3;
     const int off = 20;
 
-    void menus()
-    {
-        wex::menubar mb(fm);
-
-        wex::menu mf(fm);
-        mf.append("Open", [&](const std::string &title)
-                  {
-        // prompt for file to open
-        wex::filebox fb( fm );
-        auto paths = fb.open();
-        if( paths.empty() )
-            return;
-        try
-        {
-            // read the file
-            cRoom::readfile( paths );
-
-            fm.text( paths);
-
-            try {
-            cRoom::pipeHouse();
-            }
-            catch(std::runtime_error& e)
-            {
-                wex::msgbox(e.what());
-                exit(1);
-            }
-
-            // refresh display with contents of opened file
-            fm.update();
-        }
-        catch( std::runtime_error& e )
-        {
-            wex::msgbox mb(
-                           std::string("Error reading file\n")+e.what());
-            exit(1);
-        } });
-
-        mf.appendSeparator();
-        mf.append("Run Unit Tests", [&](const std::string &title)
-                  {
-            if (!unitTest())
-            {
-                 wex::msgbox mb("unit test failed");
-                exit(1);
-            } });
-
-        mb.append("File", mf);
-    }
+    void menus();
 
     void drawPipes(
         wex::shapes &S,
