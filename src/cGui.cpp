@@ -1,4 +1,5 @@
 #include <wex.h>
+#include <inputbox.h>
 #include "pipify.h"
 #include "cGUI.h"
 
@@ -48,7 +49,7 @@ void cGUI::menus()
 
                       exit(1);
                   }
-                   fm.update();
+                  fm.update();
               });
     mr.append("Unit Tests",
               [&](const std::string &title)
@@ -62,6 +63,21 @@ void cGUI::menus()
               });
 
     mb.append("Run", mr);
+
+    wex::menu me(fm);
+    me.append("Pipe Separation",
+              [&](const std::string &title)
+              {
+                  wex::inputbox ib(fm);
+                  ib.text("Pipe Separation");
+                  ib.labelWidth(70);
+                  ib.add("Separation", std::to_string(cRoom::seperation())); 
+                  ib.showModal();
+
+                  cRoom::set(atoi(ib.value("Separation").c_str()));
+              });
+
+    mb.append("Edit", me);
 }
 
 void cGUI::drawHousePipes(

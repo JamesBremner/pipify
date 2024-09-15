@@ -99,6 +99,11 @@ public:
 
     cRoom() {}
 
+    std::string name() const
+    {
+        return myName;
+    }
+    
     /// @brief get the wall segments, ready to draw the room wall
     /// @return
     std::vector<std::vector<cxy>> wallSegments();

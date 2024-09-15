@@ -404,8 +404,10 @@ std::pair<cRoom, cRoom> ConcaveSplit(
     std::pair<cxy, cxy> oppositeWall, newWall;
     int concaveIndex;
     std::vector<cxy> subRoom1Wall, subRoom2Wall;
+    std::vector<int> subRoom1Doors, subRoom2Doors;
 
     auto wps = ConcaveRoom.getWallPoints();
+    auto dps = ConcaveRoom.getDoorPoints();
 
     eCorner corner = ConcaveRoom.isConcave(concaveIndex);
     cxy concavePoint = ConcaveRoom.getWallDoorPoint(concaveIndex);
@@ -423,8 +425,11 @@ std::pair<cRoom, cRoom> ConcaveSplit(
 
         for (int ip = 0; ip < wps.size(); ip++)
         {
-            if (!(wps[ip] == newWall.first))
+            if (!(wps[ip] == newWall.first)) {
                 subRoom1Wall.push_back(wps[ip]);
+                if( ip == dps[0] )
+                    subRoom1Doors.push_back( subRoom1Wall.size()-1);
+            }
             else
             {
                 while (true)
@@ -509,12 +514,13 @@ std::pair<cRoom, cRoom> ConcaveSplit(
             "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8");
     }
 
+    // construct the subrooms
     ret.first = cRoom(
-        "",
+        ConcaveRoom.name() + "_sub1",
         subRoom1Wall,
-        ConcaveRoom.getDoorPoints());
+        subRoom1Doors);
     ret.second = cRoom(
-        "",
+        ConcaveRoom.name() + "_sub2",
         subRoom2Wall,
         {});
 
@@ -686,7 +692,7 @@ std::vector<cxy> cRoom::pipeSpiral(
             break;
         default:
             throw std::runtime_error(
-                "pipeSpiral bad corner");
+                "pipeSpiral bad corner " + name() );
         }
         // check if spiral has become vanishingly small
         if (isSpiralComplete(spiral, wallSeperation, bend))
@@ -782,8 +788,6 @@ void cRoom::readfile(const std::string &fname)
 
     // save last room
     add(name, wallPoints, doorPoints);
-
-    set(6); // pipe seperation
 
     furnaceRoom(furnaceRoomName);
 }

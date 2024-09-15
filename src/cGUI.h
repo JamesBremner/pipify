@@ -69,6 +69,8 @@ public:
               "Pipify",
               {50, 50, 1000, 500})
     {
+        // set default pipe separation
+        cRoom::set( 6 );
 
         menus();
 
