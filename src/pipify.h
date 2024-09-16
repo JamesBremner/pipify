@@ -99,6 +99,11 @@ public:
 
     cRoom() {}
 
+    void clearPipes()
+    {
+        myPipePoints.clear();
+    }
+
     std::string name() const
     {
         return myName;
@@ -284,6 +289,10 @@ public:
     /// @brief clear rooms from house
 
     static void clear();
+
+    /// @brief clear pipes from house
+    
+    static void clearHousePipes();
 
     /// @brief get next corner type
     /// @param corner current corner type

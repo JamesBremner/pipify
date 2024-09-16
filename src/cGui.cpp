@@ -68,13 +68,19 @@ void cGUI::menus()
     me.append("Pipe Separation",
               [&](const std::string &title)
               {
+                // prompt user
                   wex::inputbox ib(fm);
                   ib.text("Pipe Separation");
                   ib.labelWidth(70);
                   ib.add("Separation", std::to_string(cRoom::seperation())); 
                   ib.showModal();
 
+                    // set edited value
                   cRoom::set(atoi(ib.value("Separation").c_str()));
+
+                  cRoom::clearHousePipes();
+
+                  fm.update();
               });
 
     mb.append("Edit", me);
@@ -131,7 +137,7 @@ void cGUI::drawFurnacePipes(
     wex::shapes &S,
     int ir)
 {
-    const int retSep = cRoom::seperation() + 2;
+    const int retSepPixels = scale * cRoom::seperation() / 2;
     cxy p1, p2, p3, p4;
     auto pipes = cRoom::getRooms()[ir].pipes();
     if (!pipes.size())
@@ -164,72 +170,72 @@ void cGUI::drawFurnacePipes(
             case eMargin::top:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
-                    p3.x = p1.x + retSep;
-                    p3.y = p1.y + retSep;
-                    p4.x = p2.x - retSep;
-                    p4.y = p2.y + retSep;
+                    p3.x = p1.x + retSepPixels;
+                    p3.y = p1.y + retSepPixels;
+                    p4.x = p2.x - retSepPixels;
+                    p4.y = p2.y + retSepPixels;
                 }
                 else
                 {
                     p3 = p1;
                     p4 = p2;
-                    p3.y -= retSep;
-                    p4.x += retSep;
-                    p4.y -= retSep;
+                    p3.y -= retSepPixels;
+                    p4.x += retSepPixels;
+                    p4.y -= retSepPixels;
                 }
                 break;
 
             case eMargin::right:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
-                    p3.x = p1.x - retSep;
-                    p3.y = p1.y + retSep;
-                    p4.x = p2.x - retSep;
-                    p4.y = p2.y - retSep;
+                    p3.x = p1.x - retSepPixels;
+                    p3.y = p1.y + retSepPixels;
+                    p4.x = p2.x - retSepPixels;
+                    p4.y = p2.y - retSepPixels;
                 }
                 else
                 {
                     p3 = p1;
                     p4 = p2;
-                    p3.x -= retSep;
-                    p3.y -= retSep;
-                    p4.x -= retSep;
+                    p3.x -= retSepPixels;
+                    p3.y -= retSepPixels;
+                    p4.x -= retSepPixels;
                 }
                 break;
 
             case eMargin::bottom:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
-                    p3.x = p1.x - retSep;
-                    p3.y = p1.y - retSep;
-                    p4.x = p2.x + retSep;
-                    p4.y = p2.y - retSep;
+                    p3.x = p1.x - retSepPixels;
+                    p3.y = p1.y - retSepPixels;
+                    p4.x = p2.x + retSepPixels;
+                    p4.y = p2.y - retSepPixels;
                 }
                 else
                 {
                     p3 = p1;
                     p4 = p2;
-                    p3.x -= retSep;
-                    p3.y += retSep;
-                    p4.x -= retSep;
-                    p4.y += retSep;
+                    p3.x -= retSepPixels;
+                    p3.y += retSepPixels;
+                    p4.x -= retSepPixels;
+                    p4.y += retSepPixels;
                 }
                 break;
             case eMargin::left:
                 if (seg.myType == cPipeline::ePipe::ring)
                 {
-                    p3.x = p1.x + retSep;
-                    p3.y = p1.y - retSep;
-                    p4.x = p2.x + retSep;
-                    p4.y = p2.y + retSep;
+                    p3.x = p1.x + retSepPixels;
+                    p3.y = p1.y - retSepPixels;
+                    p4.x = p2.x + retSepPixels;
+                    p4.y = p2.y + retSepPixels;
                 }
                 else
                 {
                     p3 = p1;
                     p4 = p2;
-                    p3.x += retSep;
-                    p3.y += retSep;
-                    p4.x += retSep;
+                    p3.x += retSepPixels;
+                    p3.y += retSepPixels;
+                    p4.x += retSepPixels;
                 }
                 break;
             }
@@ -324,7 +330,6 @@ void cGUI::drawPipes(
     wex::shapes &S,
     const std::vector<cPipeline> &pipes)
 {
-    const int outInSep = cRoom::seperation() + 2;
     int x1, y1, x2, y2, x3, y3, x4, y4;
 
     for (auto &pipesegment : pipes)
@@ -363,7 +368,7 @@ void cGUI::drawPipes(
                     doorReturnLineSegment(
                         rx1, ry1, rx2, ry2,
                         x1, y1, x2, y2,
-                        outInSep);
+                        retSepPixels);
                 }
                 else if (pipesegment.myType == cPipeline::ePipe::subroom)
                 {
@@ -381,12 +386,12 @@ void cGUI::drawPipes(
                         rx1, ry1, rx2, ry2,
                         x1, y1, x2, y2,
                         corner,
-                        outInSep);
+                        retSepPixels);
 
                     if (first)
                     {
                         first = false;
-                        rx1 -= 2 * outInSep;
+                        rx1 -= 2 * retSepPixels;
                     }
                     lastReturn = cxy(rx2, ry2);
                 }
@@ -403,7 +408,7 @@ void cGUI::drawPipes(
                         rx1, ry1, rx2, ry2,
                         x1, y1, x2, y2,
                         corner,
-                        outInSep);
+                        retSepPixels);
                     lastReturn = cxy(rx2, ry2);
                 }
 

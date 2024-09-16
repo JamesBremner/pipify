@@ -81,6 +81,8 @@ public:
                 S.color(0);
                 S.penThick(4);
 
+                retSepPixels = ( scale * cRoom::seperation() ) / 2;
+
                 // loop over rooms
                 for (auto &r : cRoom::houseWallSegments())
                 {
@@ -97,6 +99,7 @@ public:
 private:
     const int scale = 3;
     const int off = 20;
+    int retSepPixels;       // seperation between hot and return pipes in pixels
 
     void menus();
 

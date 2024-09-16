@@ -46,6 +46,12 @@ void cRoom::clear()
     theHouse.clear();
 }
 
+void cRoom::clearHousePipes()
+{
+    for (auto &room : theHouse)
+        room.clearPipes();
+}
+
 std::vector<std::vector<cxy>> cRoom::wallSegments()
 {
     std::vector<std::vector<cxy>> ret;
@@ -276,15 +282,18 @@ void cRoom::pipeHouse()
 {
     for (int ri = 0; ri < theHouse.size(); ri++)
     {
+        cRoom &room = theHouse[ri];
+
         std::cout << "calculating pipe layout for room "
-                  << theHouse[ri].myName << "\n";
+                  << room.myName << "\n";
+
         if (ri == thefurnaceRoomIndex)
         {
-            theHouse[ri].pipefurnaceRoom();
+            room.pipefurnaceRoom();
             continue;
         }
 
-        theHouse[ri].pipe();
+        room.pipe();
     }
 }
 
@@ -425,10 +434,11 @@ std::pair<cRoom, cRoom> ConcaveSplit(
 
         for (int ip = 0; ip < wps.size(); ip++)
         {
-            if (!(wps[ip] == newWall.first)) {
+            if (!(wps[ip] == newWall.first))
+            {
                 subRoom1Wall.push_back(wps[ip]);
-                if( ip == dps[0] )
-                    subRoom1Doors.push_back( subRoom1Wall.size()-1);
+                if (ip == dps[0])
+                    subRoom1Doors.push_back(subRoom1Wall.size() - 1);
             }
             else
             {
@@ -526,8 +536,6 @@ std::pair<cRoom, cRoom> ConcaveSplit(
 
     return ret;
 }
-
-
 
 void cRoom::pipeConcave(int concaveIndex)
 {
@@ -692,7 +700,7 @@ std::vector<cxy> cRoom::pipeSpiral(
             break;
         default:
             throw std::runtime_error(
-                "pipeSpiral bad corner " + name() );
+                "pipeSpiral bad corner " + name());
         }
         // check if spiral has become vanishingly small
         if (isSpiralComplete(spiral, wallSeperation, bend))
@@ -822,12 +830,25 @@ void cRoom::furnaceRoom(const std::string &name)
     if (theHouse.size() - 1 > theHouse[thefurnaceRoomIndex].doorCount())
         throw std::runtime_error("Not enough doors in furnace room");
 
-    // check that other rooms have exactly one door TID5
+    // check that other rooms have exactly one door that matched a furnace room door
     for (auto &r : theHouse)
         if (r.myName != name)
+        {
             if (r.doorCount() != 1)
                 throw std::runtime_error(
                     "every room must have exactly one door");
+            cxy roomDoor = r.getWallPoints()[r.getDoorPoints()[0]];
+            for (
+                int ifurnaceDoor = theHouse[thefurnaceRoomIndex].getDoorPoints()[0];
+                ifurnaceDoor < theHouse[thefurnaceRoomIndex].getDoorPoints().size();
+                ifurnaceDoor++)
+            {
+                cxy furnaceDoor = theHouse[thefurnaceRoomIndex].getWallPoints()[ifurnaceDoor];
+                if (roomDoor == furnaceDoor)
+                {
+                }
+            }
+        }
 
     // TODO: check every room connected directly to furnace room TID3
 }
