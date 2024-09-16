@@ -277,12 +277,12 @@ void doorReturnLineSegment(
         ry2 = y2 - sep;
         break;
     }
-    std::cout << "door return "
-              << rx1 << " "
-              << ry1 << " "
-              << rx2 << " "
-              << ry2 << " "
-              << "\n";
+    // std::cout << "door return "
+    //           << rx1 << " "
+    //           << ry1 << " "
+    //           << rx2 << " "
+    //           << ry2 << " "
+    //           << "\n";
 }
 
 void spiralReturnLineSegment(

@@ -634,24 +634,29 @@ std::vector<cxy> cRoom::pipeSpiral(
     {
         if (cornerIndex == noDoors.size() - 1)
         {
-            std::cout << "// wrap around noDoors";
+            //std::cout << "// wrap around noDoors";
             cornerIndex = 0;
         }
 
         bool fspiralwrap = false;
-        if (startIndex == 0)
+        if (spiral.size() > 1 )
         {
-            if (cornerIndex == 0)
-                fspiralwrap = true;
-        }
-        else
-        {
-            if (cornerIndex == startIndex - 1)
-                fspiralwrap = true;
+            // the spiral contains more than just the start point
+
+            if (startIndex == 0)
+            {
+                if (cornerIndex == noDoors.size()-3)
+                    fspiralwrap = true;
+            }
+            else
+            {
+                if (cornerIndex == startIndex - 1)
+                    fspiralwrap = true;
+            }
         }
         if (fspiralwrap)
         {
-            std::cout << "// wrap around spiral\n";
+           // std::cout << "// wrap around spiral\n";
             wallSeperation += theSeperation;
             fspiralwrap = true;
         }
@@ -666,11 +671,12 @@ std::vector<cxy> cRoom::pipeSpiral(
         bend = noDoors[cornerIndex];
         p3 = noDoors[cornerIndex + 1];
 
-        std::cout << cornerIndex
-                  << " " << p1.x << " " << p1.y
-                  << ", " << bend.x << " " << bend.y
-                  << ", " << p3.x << " " << p3.y
-                  << "\n";
+        // std::cout << cornerIndex
+        //           << " " << myName << " " << wallSeperation
+        //           << " " << p1.x << " " << p1.y
+        //           << ", " << bend.x << " " << bend.y
+        //           << ", " << p3.x << " " << p3.y
+        //           << "\n";
 
         switch (corner(p1, bend, p3))
         {
