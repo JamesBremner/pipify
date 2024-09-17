@@ -35,7 +35,7 @@ bool unitTest()
     // subRooms.second.pipeConvex();
 
     cRoom::readfile("../dat/L2.txt");
-    auto subRooms = ConcaveSplit(
+    auto subRooms = concaveSplit(
         cRoom::getRooms()[0],
         jointPoint);
     subRooms.second.pipeConvex();

@@ -196,7 +196,7 @@ public:
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
 
-    void pipeConcave(int concaveIndex);
+    void concavePipe(int concaveIndex);
 
     /// @brief layout pipes in a doorway
     /// @param spiral pipes added to
@@ -351,7 +351,7 @@ bool unitTest();
 /// @param[out] joinPoint where the 2nd room pipe joins the first room pipe
 /// @return pair of convex rooms
 
-std::pair<cRoom,cRoom> ConcaveSplit(
+std::pair<cRoom,cRoom> concaveSplit(
     const cRoom& ConcaveRoom,
     cxy& joinPoint );
 

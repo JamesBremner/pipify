@@ -297,7 +297,6 @@ void cRoom::pipeHouse()
             }
 
             theHouse[ri].pipe();
-            
         }
         catch (std::runtime_error &e)
         {
@@ -405,7 +404,7 @@ void cRoom::pipe()
     case eCorner::br_cav:
     case eCorner::tl_cav:
     case eCorner::tr_cav:
-        pipeConcave(concaveIndex);
+        concavePipe(concaveIndex);
         break;
 
     case eCorner::error:
@@ -414,8 +413,51 @@ void cRoom::pipe()
         break;
     }
 }
+std::pair<cRoom, cRoom> concaveMakeSubRooms(
+    const cRoom &ConcaveRoom,
+    const std::vector<cxy> &subRoom1Wall,
+    const std::vector<int> &subRoom1Doors,
+    const std::vector<cxy> &subRoom2Wall,
+    const std::vector<int> &subRoom2Doors)
+{
+       // check subroom sanity
+    if ((!subRoom1Doors.size()) && (!subRoom2Doors.size()))
+        throw std::runtime_error(
+            "concaveSplit no door in either subroom of " + ConcaveRoom.name());
+    if (subRoom1Doors.size())
+    {
+        if (subRoom1Wall.size() != 6)
+            throw std::runtime_error(
+                "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+    }
+    else if (subRoom1Wall.size() != 4)
+        throw std::runtime_error(
+            "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+    if (subRoom2Doors.size())
+    {
+        if (subRoom2Wall.size() != 6)
+            throw std::runtime_error(
+                "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+    }
+    else if (subRoom2Wall.size() != 4)
+        throw std::runtime_error(
+            "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
 
-std::pair<cRoom, cRoom> ConcaveSplit(
+    // construct the subrooms
+    std::pair<cRoom, cRoom> ret;
+    ret.first = cRoom(
+        ConcaveRoom.name() + "_sub1",
+        subRoom1Wall,
+        subRoom1Doors);
+    ret.second = cRoom(
+        ConcaveRoom.name() + "_sub2",
+        subRoom2Wall,
+        subRoom2Doors);
+
+        return ret;
+}
+
+std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom,
     cxy &joinPoint)
 {
@@ -448,7 +490,10 @@ std::pair<cRoom, cRoom> ConcaveSplit(
             {
                 subRoom1Wall.push_back(wps[ip]);
                 if (ip == dps[0])
+                {
                     subRoom1Doors.push_back(subRoom1Wall.size() - 1);
+                    std::cout << "tr_cav subroom1 door " << subRoom1Wall.back().x << " " << subRoom1Wall.back().y << "\n";
+                }
             }
             else
             {
@@ -498,7 +543,9 @@ std::pair<cRoom, cRoom> ConcaveSplit(
         {
             subRoom1Wall.push_back(wps[ip]);
             if (ip == dps[0])
+            {
                 subRoom1Doors.push_back(subRoom1Wall.size() - 1);
+            }
 
             if (wps[ip] == oppositeWall.first) // !!!!!!
             {
@@ -523,8 +570,17 @@ std::pair<cRoom, cRoom> ConcaveSplit(
         subRoom2Wall.clear();
         subRoom2Wall.push_back(newWall.first);
         subRoom2Wall.push_back(newWall.second);
-        subRoom2Wall.push_back(oppositeWall.second);
-        subRoom2Wall.push_back(wps[concaveIndex - 1]);
+        for (
+            int ip = ConcaveRoom.getWallDoorIndex(oppositeWall.second);
+            ip < concaveIndex;
+            ip++)
+        {
+            subRoom2Wall.push_back(ConcaveRoom.getWallDoorPoint(ip));
+            if (ip == dps[0])
+            {
+                subRoom2Doors.push_back(subRoom2Wall.size() - 1);
+            }
+        }
 
         joinPoint = newWall.second;
         joinPoint.x += cRoom::seperation();
@@ -537,24 +593,17 @@ std::pair<cRoom, cRoom> ConcaveSplit(
             "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8");
     }
 
-    // construct the subrooms
-    ret.first = cRoom(
-        ConcaveRoom.name() + "_sub1",
-        subRoom1Wall,
-        subRoom1Doors);
-    ret.second = cRoom(
-        ConcaveRoom.name() + "_sub2",
-        subRoom2Wall,
-        {});
-
-    return ret;
+    return concaveMakeSubRooms(
+        ConcaveRoom,
+        subRoom1Wall,subRoom1Doors,
+        subRoom2Wall,subRoom2Doors    );
 }
 
-void cRoom::pipeConcave(int concaveIndex)
+void cRoom::concavePipe(int concaveIndex)
 {
     // split concave room into 2 convex rooms
     cxy joinPoint;
-    auto subrooms = ConcaveSplit(*this, joinPoint);
+    auto subrooms = concaveSplit(*this, joinPoint);
 
     // pipe first subroom
     subrooms.first.pipeConvex();
