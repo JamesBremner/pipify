@@ -17,11 +17,11 @@ which when rendered gives
 
 ![image](https://github.com/user-attachments/assets/5d1d233f-919c-4ad8-b202-1d28d04ace88)
 
-## Pipe layout in a convex room
+## Pipe layout in  convex rooms
 
 Shows return pipe in blue.
 
-![image](https://github.com/user-attachments/assets/3fa3fcf3-faa0-4acc-b7ea-fa872df0b8ba)
+![image](https://github.com/user-attachments/assets/5ef1d03e-c891-4a1e-b6ec-4217baa764ef)
 
 
 ## Pipe layout in a L-shaped room
