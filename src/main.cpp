@@ -645,7 +645,7 @@ std::vector<cxy> cRoom::pipeSpiral(
 
             if (startIndex == 0)
             {
-                if (cornerIndex == noDoors.size()-3)
+                if (cornerIndex == noDoors.size()-2)
                     fspiralwrap = true;
             }
             else
@@ -696,7 +696,7 @@ std::vector<cxy> cRoom::pipeSpiral(
             bend.x += wallSeperation;
             bend.y -= wallSeperation;
             if (fspiralwrap)
-                bend.y += wallSeperation;
+                bend.y += theSeperation;
             break;
         case eCorner::tl_vex:
             bend.x += wallSeperation;
