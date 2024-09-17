@@ -272,7 +272,7 @@ void doorReturnLineSegment(
         break;
     case eMargin::left:
         rx1 = x1 + sep;
-        ry1 = y1;
+        ry1 = y1 + sep;
         rx2 = x2 + sep;
         ry2 = y2 - sep;
         break;
