@@ -80,8 +80,8 @@ public:
 class cRoom
 {
 
-    static std::vector<cRoom> theHouse; // the house composed of rooms
-    static int theSeperation;
+    static std::vector<cRoom> theHouse;     // the house composed of rooms
+    static int theSeperation;               // separation between hot pipes, user units
     static int thefurnaceRoomIndex;
 
     std::string myName;

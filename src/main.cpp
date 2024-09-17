@@ -280,20 +280,30 @@ void cRoom::pipeDoor()
 
 void cRoom::pipeHouse()
 {
+    if (!theHouse.size())
+        return;
+
     for (int ri = 0; ri < theHouse.size(); ri++)
     {
-        cRoom &room = theHouse[ri];
-
-        std::cout << "calculating pipe layout for room "
-                  << room.myName << "\n";
-
-        if (ri == thefurnaceRoomIndex)
+        try
         {
-            room.pipefurnaceRoom();
-            continue;
-        }
+            std::cout << "calculating pipe layout for room "
+                      << theHouse[ri].myName << "\n";
 
-        room.pipe();
+            if (ri == thefurnaceRoomIndex)
+            {
+                theHouse[ri].pipefurnaceRoom();
+                continue;
+            }
+
+            theHouse[ri].pipe();
+            
+        }
+        catch (std::runtime_error &e)
+        {
+            std::cout << "Exception " << e.what() << "\n";
+            theHouse[ri].clearPipes();
+        }
     }
 }
 
@@ -487,6 +497,9 @@ std::pair<cRoom, cRoom> ConcaveSplit(
         for (int ip = 0; ip < wps.size(); ip++)
         {
             subRoom1Wall.push_back(wps[ip]);
+            if (ip == dps[0])
+                subRoom1Doors.push_back(subRoom1Wall.size() - 1);
+
             if (wps[ip] == oppositeWall.first) // !!!!!!
             {
 
@@ -634,18 +647,18 @@ std::vector<cxy> cRoom::pipeSpiral(
     {
         if (cornerIndex == noDoors.size() - 1)
         {
-            //std::cout << "// wrap around noDoors";
+            // std::cout << "// wrap around noDoors";
             cornerIndex = 0;
         }
 
         bool fspiralwrap = false;
-        if (spiral.size() > 1 )
+        if (spiral.size() > 1)
         {
             // the spiral contains more than just the start point
 
             if (startIndex == 0)
             {
-                if (cornerIndex == noDoors.size()-2)
+                if (cornerIndex == noDoors.size() - 2)
                     fspiralwrap = true;
             }
             else
@@ -656,7 +669,7 @@ std::vector<cxy> cRoom::pipeSpiral(
         }
         if (fspiralwrap)
         {
-           // std::cout << "// wrap around spiral\n";
+            // std::cout << "// wrap around spiral\n";
             wallSeperation += theSeperation;
             fspiralwrap = true;
         }
