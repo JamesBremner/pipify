@@ -314,14 +314,14 @@ public:
 private:
     void boundingRectangle();
 
-    std::vector<cxy> pipeSpiral(
-        int startIndex,
-        const cxy &startPoint);
+    // std::vector<cxy> pipeSpiral(
+    //     int startIndex,
+    //     const cxy &startPoint);
 
-    bool isSpiralComplete(
-        std::vector<cxy> &spiral,
-        int wallSeperation,
-        const cxy &nextbend) const;
+    // bool isSpiralComplete(
+    //     std::vector<cxy> &spiral,
+    //     int wallSeperation,
+    //     const cxy &nextbend) const;
 };
 
 /// @brief Room corners ( no doors ) as a closed polygon

@@ -44,17 +44,16 @@ cxy doorCenter(
     return ret;
 }
 
-std::vector<cxy> spiralMaker(
+cPipeline spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
     const cxy &startWallPoint,
     double maxDim)
 {
     // spiral to be returned
-    std::vector<cxy> ret;
+    std::vector<cxy> spiral;
 
     // starting side
-    cxy p1, p2;
     int ip2 = startCornerIndex + 1;
     if (ip2 == polygon.size())
         ip2 = 0;
@@ -84,16 +83,17 @@ std::vector<cxy> spiralMaker(
         throw std::runtime_error(
             "spiralMake error");
     }
-    ret.push_back(first);
+    spiral.push_back(first);
 
     int wallsep = sep;
     for (int bendIndex = ip2; true; bendIndex++)
     {
+        // wrap around the polygon
         if (bendIndex == polygon.size() - 1)
             bendIndex = 0;
         int ip1 = bendIndex - 1;
         if (ip1 == -1)
-            ip1 = polygon.size() - 1;
+            ip1 = polygon.size() - 2;
         ip2 = bendIndex + 1;
         if (ip2 == polygon.size())
             ip2 = 1;
@@ -151,12 +151,15 @@ std::vector<cxy> spiralMaker(
                 "spiral NYI");
         }
 
-        ret.push_back(bendPoint);
+        if( spiral.back().dist2(bendPoint) < sep * sep )
+            break; 
 
-        // break;
+        spiral.push_back(bendPoint);
     }
 
-    return ret;
+    return cPipeline(
+        cPipeline::ePipe::spiral,
+        spiral);
 }
 
 cRoom::cRoom(
@@ -369,7 +372,7 @@ void cRoom::pipeDoor()
 {
     cxy p1, p2, p3;
 
-    p1 = doorCenter(myWallPoints,myDoorPoints[0]);
+    p1 = doorCenter(myWallPoints, myDoorPoints[0]);
 
     // start at the first door
     // There should be only one door
@@ -498,9 +501,9 @@ void cRoom::pipefurnaceRoom()
 
     for (int doorIndex : myDoorPoints)
     {
-        cxy dc = doorCenter( myWallPoints, doorIndex);
+        cxy dc = doorCenter(myWallPoints, doorIndex);
         cxy p2 = dc;
-        switch (side(dc, myWallPoints[doorIndex+1]))
+        switch (side(dc, myWallPoints[doorIndex + 1]))
         {
         case eMargin::top:
             p2.y = dc.y + theSeperation;
@@ -747,37 +750,42 @@ void cRoom::concavePipe(int concaveIndex)
 
 void cRoom::pipeConvex(int x, int y)
 {
-    int spiralStartCornerIndex;
 
-    cxy spiralStartPoint(x, y);
-    if (myDoorPoints.size())
+    cCorners corners(*this);
+
+    int startCornerIndex;
+    cxy startWallPoint;
+    if (!myDoorPoints.size())
+    {
+        startCornerIndex = 0;
+        startWallPoint = myWallPoints[0];
+        switch (side(myWallPoints[0], myWallPoints[1]))
+        {
+        case eMargin::top:
+            startWallPoint.x += theSeperation;
+            break;
+        case eMargin::right:
+            startWallPoint.y += theSeperation;
+            break;
+        case eMargin::bottom:
+            startWallPoint.x += theSeperation;
+            break;
+        case eMargin::left:
+            startWallPoint.y -= theSeperation;
+            break;
+        }
+    }
+    else
     {
         // layout pipes through the door to the furnace room
         pipeDoor();
 
-        spiralStartCornerIndex = myDoorPoints[0] + 2;
-        if (spiralStartCornerIndex == myWallPoints.size())
-            spiralStartCornerIndex = 0;
-
-        // start where the door pipes finished
-        spiralStartPoint = myPipePoints.back().last();
+        startCornerIndex = myDoorPoints[0] - 1;
+        if (startCornerIndex == -1)
+            startCornerIndex = myWallPoints.size() - 1;
+        startWallPoint = doorCenter(
+            myWallPoints, myDoorPoints[0]);
     }
-    else
-    {
-        // there is no door
-        // this must be a subroom, part of a concave room
-        // start at nearest pipe in first subroom
-
-        spiralStartCornerIndex = 1;
-    }
-    cCorners corners(*this);
-
-    int startCornerIndex = myDoorPoints[0] - 1;
-    if (startCornerIndex == -1)
-        startCornerIndex = myWallPoints.size() - 1;
-
-    cxy startWallPoint = doorCenter(
-        myWallPoints, myDoorPoints[0]);
 
     auto spiral = spiralMaker(
         corners.getCorners(),
@@ -785,9 +793,7 @@ void cRoom::pipeConvex(int x, int y)
         startWallPoint,
         myMaxDim);
 
-    myPipePoints.emplace_back(
-        cPipeline::ePipe::spiral,
-        spiral);
+    myPipePoints.push_back(spiral);
 }
 
 void cRoom::boundingRectangle()
@@ -812,136 +818,6 @@ void cRoom::boundingRectangle()
     myMaxDim = xrange;
     if (yrange > xrange)
         myMaxDim = yrange;
-}
-
-// std::vector<cxy> cRoom::pipeSpiral(
-//     int startIndex,
-//     const cxy &startPoint)
-// {
-//     std::vector<cxy> spiral;
-
-//     // construct closed polygon without doors
-//     cCorners corners(*this);
-//     startIndex = corners.index(startIndex);
-//     std::vector<cxy> noDoors = corners.getCorners();
-
-//     // start spiral
-
-//     spiral.push_back(startPoint);
-
-//     int wallSeperation = theSeperation;
-
-//     for (int cornerIndex = startIndex; true; cornerIndex++)
-//     {
-//         if (cornerIndex == noDoors.size() - 1)
-//         {
-//             // std::cout << "// wrap around noDoors";
-//             cornerIndex = 0;
-//         }
-
-//         bool fspiralwrap = false;
-//         if (spiral.size() > 1)
-//         {
-//             // the spiral contains more than just the start point
-
-//             if (startIndex == 0)
-//             {
-//                 if (cornerIndex == noDoors.size() - 2)
-//                     fspiralwrap = true;
-//             }
-//             else
-//             {
-//                 if (cornerIndex == startIndex - 1)
-//                     fspiralwrap = true;
-//             }
-//         }
-//         if (fspiralwrap)
-//         {
-//             // std::cout << "// wrap around spiral\n";
-//             wallSeperation += theSeperation;
-//             fspiralwrap = true;
-//         }
-
-//         cxy p1, bend, p3;
-//         if (cornerIndex == 0)
-//             p1 = noDoors[noDoors.size() - 2];
-//         else
-//         {
-//             p1 = noDoors[cornerIndex - 1];
-//         }
-//         bend = noDoors[cornerIndex];
-//         p3 = noDoors[cornerIndex + 1];
-
-//         // std::cout << cornerIndex
-//         //           << " " << myName << " " << wallSeperation
-//         //           << " " << p1.x << " " << p1.y
-//         //           << ", " << bend.x << " " << bend.y
-//         //           << ", " << p3.x << " " << p3.y
-//         //           << "\n";
-
-//         switch (corner(p1, bend, p3))
-//         {
-//         case eCorner::tr_vex:
-//             bend.x -= wallSeperation;
-//             bend.y += wallSeperation;
-//             if (fspiralwrap)
-//                 bend.y -= theSeperation;
-//             break;
-//         case eCorner::br_vex:
-//             bend.x -= wallSeperation;
-//             bend.y -= wallSeperation;
-//             if (fspiralwrap)
-//                 bend.x += theSeperation;
-//             break;
-//         case eCorner::bl_vex:
-//             bend.x += wallSeperation;
-//             bend.y -= wallSeperation;
-//             if (fspiralwrap)
-//                 bend.y += theSeperation;
-//             break;
-//         case eCorner::tl_vex:
-//             bend.x += wallSeperation;
-//             bend.y += wallSeperation;
-//             if (fspiralwrap)
-//                 bend.x -= theSeperation;
-//             break;
-//         default:
-//             throw std::runtime_error(
-//                 "pipeSpiral bad corner " + name());
-//         }
-//         // check if spiral has become vanishingly small
-//         if (isSpiralComplete(spiral, wallSeperation, bend))
-//             return spiral;
-//     }
-
-//     return spiral;
-// }
-
-bool cRoom::isSpiralComplete(
-    std::vector<cxy> &spiral,
-    int wallSeperation,
-    const cxy &nextbend) const
-{
-    if (!spiral.size())
-    {
-        spiral.push_back(nextbend);
-        return false;
-    }
-
-    // distance squared from last pipe point to new point
-    double d2 = spiral.back().dist2(nextbend);
-
-    // std::cout << d2 <<" "<< wallSeperation<< "\n";
-
-    if (d2 < theSeperation * theSeperation)
-        return true;
-
-    if (wallSeperation > myMaxDim / 2)
-        return true;
-
-    // keep going
-    spiral.push_back(nextbend);
-    return false;
 }
 
 void cRoom::readfile(const std::string &fname)
