@@ -17,6 +17,106 @@ int cRoom::theSeperation;
 
 int cRoom::thefurnaceRoomIndex;
 
+std::vector<cxy> spiralMaker(
+    const std::vector<cxy> &polygon,
+    int startCornerIndex,
+    const cxy &startWallPoint,
+    double maxDim)
+{
+    // spiral to be returned
+    std::vector<cxy> ret;
+
+    // starting side
+    cxy p1, p2;
+    int ip2 = startCornerIndex + 1;
+    if (ip2 == polygon.size())
+        ip2 = 0;
+    eMargin m = cRoom::side(
+        polygon[startCornerIndex],
+        polygon[ip2]);
+
+    // first spiral point
+    int sep = cRoom::seperation();
+    cxy first(startWallPoint);
+    switch (m)
+    {
+    case eMargin::top:
+        first.x += sep;
+        first.y += sep;
+        break;
+    default:
+        throw std::runtime_error(
+            "spiral NYI");
+    }
+    ret.push_back(first);
+
+    int wallsep = sep;
+    for (int bendIndex = ip2; true; bendIndex++)
+    {
+        if (bendIndex == polygon.size() - 1)
+            bendIndex = 0;
+        int ip1 = bendIndex - 1;
+        if (ip1 == -1)
+            ip1 = polygon.size() - 1;
+        ip2 = bendIndex + 1;
+        if (ip2 == polygon.size())
+            ip2 = 1;
+
+        cxy bendPoint = polygon[bendIndex];
+
+        bool fspiralwrap = false;
+        if (bendIndex == startCornerIndex)
+        {
+            // the next bend will complete a loop of the spiral
+            fspiralwrap = true;
+
+            // increment wall separation
+            wallsep += sep;
+            if (wallsep > maxDim / 2)
+            {
+                // wall separation has reached the middle of the polygon
+                break;
+            }
+        }
+
+        auto corner = cRoom::corner(
+            polygon[ip1],
+            bendPoint,
+            polygon[ip2]);
+
+        switch (corner)
+        {
+        case eCorner::tr_vex:
+            bendPoint.x -= wallsep;
+            bendPoint.y += wallsep;
+            break;
+        case eCorner::br_vex:
+            bendPoint.x -= wallsep;
+            bendPoint.y -= wallsep;
+            break;
+        case eCorner::bl_vex:
+            bendPoint.x += wallsep;
+            bendPoint.y -= wallsep;
+            break;
+        case eCorner::tl_vex:
+            bendPoint.x += wallsep;
+            bendPoint.y += wallsep;
+            if (fspiralwrap)
+                bendPoint.x -= sep;
+            break;
+        default:
+            throw std::runtime_error(
+                "spiral NYI");
+        }
+
+        ret.push_back(bendPoint);
+
+        // break;
+    }
+
+    return ret;
+}
+
 cRoom::cRoom(
     const std::string &name,
     const std::vector<cxy> wallPoints,
@@ -231,13 +331,12 @@ void cRoom::pipeDoor()
     // There should be only one door
     cxy d1 = myWallPoints[myDoorPoints[0]];
     cxy d2 = myWallPoints[myDoorPoints[0] + 1];
-    double doorWidthHalf = sqrt(d1.dist2(d2)) / 2;
 
     // switch on side where door is placed
     switch (side(d1, d2))
     {
     case eMargin::top:
-        p1.x = d1.x + doorWidthHalf;
+        p1.x = d1.x + theSeperation;
         p1.y = d1.y;
         p2.x = p1.x;
         p2.y = p1.y + theSeperation;
@@ -246,14 +345,14 @@ void cRoom::pipeDoor()
         break;
     case eMargin::right:
         p1.x = d1.x;
-        p1.y = d1.y + doorWidthHalf;
+        p1.y = d1.y + theSeperation;
         p2.x = p1.x - theSeperation;
         p2.y = p1.y;
         p3.x = p2.x;
         p3.y = d2.y;
         break;
     case eMargin::bottom:
-        p1.x = d1.x - doorWidthHalf;
+        p1.x = d1.x - theSeperation;
         p1.y = d1.y;
         p2.x = p1.x;
         p2.y = p1.y - theSeperation;
@@ -262,7 +361,7 @@ void cRoom::pipeDoor()
         break;
     case eMargin::left:
         p1.x = d1.x;
-        p1.y = d1.y - doorWidthHalf;
+        p1.y = d1.y - theSeperation;
         p2.x = p1.x + theSeperation;
         p2.y = p1.y;
         p3.x = p2.x;
@@ -420,7 +519,7 @@ std::pair<cRoom, cRoom> concaveMakeSubRooms(
     const std::vector<cxy> &subRoom2Wall,
     const std::vector<int> &subRoom2Doors)
 {
-       // check subroom sanity
+    // check subroom sanity
     if ((!subRoom1Doors.size()) && (!subRoom2Doors.size()))
         throw std::runtime_error(
             "concaveSplit no door in either subroom of " + ConcaveRoom.name());
@@ -454,7 +553,7 @@ std::pair<cRoom, cRoom> concaveMakeSubRooms(
         subRoom2Wall,
         subRoom2Doors);
 
-        return ret;
+    return ret;
 }
 
 std::pair<cRoom, cRoom> concaveSplit(
@@ -595,8 +694,8 @@ std::pair<cRoom, cRoom> concaveSplit(
 
     return concaveMakeSubRooms(
         ConcaveRoom,
-        subRoom1Wall,subRoom1Doors,
-        subRoom2Wall,subRoom2Doors    );
+        subRoom1Wall, subRoom1Doors,
+        subRoom2Wall, subRoom2Doors);
 }
 
 void cRoom::concavePipe(int concaveIndex)
@@ -643,10 +742,27 @@ void cRoom::pipeConvex(int x, int y)
 
         spiralStartCornerIndex = 1;
     }
+    cCorners corners(*this);
 
-    auto spiral = pipeSpiral(
-        spiralStartCornerIndex,
-        spiralStartPoint);
+    int startCornerIndex = myDoorPoints[0] - 1;
+    if (startCornerIndex == -1)
+        startCornerIndex = myWallPoints.size() - 1;
+
+    auto spiral = spiralMaker(
+        corners.getCorners(),
+        startCornerIndex,
+        myWallPoints[myDoorPoints[0]],
+        myMaxDim);
+
+    // startIndex = corners.index(startIndex);
+    // std::vector<cxy> noDoors = corners.getCorners();
+    // )
+    //     spiralStartCornerIndex,
+    //     spiralStartPoint);
+
+    // auto spiral = pipeSpiral(
+    //     spiralStartCornerIndex,
+    //     spiralStartPoint);
 
     myPipePoints.emplace_back(
         cPipeline::ePipe::spiral,
@@ -681,13 +797,15 @@ std::vector<cxy> cRoom::pipeSpiral(
     int startIndex,
     const cxy &startPoint)
 {
+    std::vector<cxy> spiral;
+
     // construct closed polygon without doors
     cCorners corners(*this);
     startIndex = corners.index(startIndex);
     std::vector<cxy> noDoors = corners.getCorners();
 
     // start spiral
-    std::vector<cxy> spiral;
+
     spiral.push_back(startPoint);
 
     int wallSeperation = theSeperation;
