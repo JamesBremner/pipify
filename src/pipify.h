@@ -187,9 +187,8 @@ public:
 
     /// @brief layout pipes in a room guaranteed to be convex
     /// @param startPoint
-    /// for a convex room, the startPoint can be ignored
-    /// for any subroom, except the first,
-    ///         startPoint should be the nearest pipe point in first subroom
+    /// for a doored room, the startPoint locates the hot point in the doorway
+    /// for an undoored room ( concave subroom ) the nearest pipe point in doored subroom
 
     void pipeConvex(int x = 0, int y = 0);
 
@@ -199,9 +198,9 @@ public:
     void concavePipe(int concaveIndex);
 
     /// @brief layout pipes in a doorway
-    /// @param spiral pipes added to
+    /// @return location of hot pipe in doorway
 
-    void pipeDoor();
+    cxy pipeDoor();
 
     /// @brief layout pipes in room
 

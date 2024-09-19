@@ -44,46 +44,31 @@ cxy doorCenter(
     return ret;
 }
 
+/// @brief Make the pipe spiral in a convex room
+/// @param polygon room with doors removed ( closed polygon )
+/// @param startCornerIndex polygon index where spiral wraps around
+/// @param startPoint spiral starting point
+/// @param maxDim rom maximum dimension extent
+/// @return spiral pipeline
+
 cPipeline spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
-    const cxy &startWallPoint,
+    const cxy &startPoint,
     double maxDim)
 {
     // spiral to be returned
     std::vector<cxy> spiral;
 
-    // starting side
+    spiral.push_back( startPoint);
+
+    // // starting side
     int ip2 = startCornerIndex + 1;
     if (ip2 == polygon.size())
         ip2 = 0;
-    eMargin m = cRoom::side(
-        polygon[startCornerIndex],
-        polygon[ip2]);
 
-    // first spiral point
-
-    cxy first = startWallPoint;
     int sep = cRoom::seperation();
-    switch (m)
-    {
-    case eMargin::top:
-        first.y += sep;
-        break;
-    case eMargin::right:
-        first.x -= sep;
-        break;
-    case eMargin::bottom:
-        first.y -= sep;
-        break;
-    case eMargin::left:
-        first.x += sep;
-        break;
-    default:
-        throw std::runtime_error(
-            "spiralMake error");
-    }
-    spiral.push_back(first);
+
 
     int wallsep = sep;
     for (int bendIndex = ip2; true; bendIndex++)
@@ -368,7 +353,7 @@ eCorner cRoom::isConcave(int &index) const
     return eCorner::error;
 }
 
-void cRoom::pipeDoor()
+cxy cRoom::pipeDoor()
 {
     cxy p1, p2, p3;
 
@@ -414,6 +399,8 @@ void cRoom::pipeDoor()
     myPipePoints.emplace_back(
         cPipeline::ePipe::door,
         pipeSegment);
+
+    return p2;
 }
 
 void cRoom::pipeHouse()
@@ -750,47 +737,32 @@ void cRoom::concavePipe(int concaveIndex)
 
 void cRoom::pipeConvex(int x, int y)
 {
+    //std::cout << "=>pipeConvex " << x <<" "<< y << "\n";
 
     cCorners corners(*this);
 
     int startCornerIndex;
-    cxy startWallPoint;
+    cxy startPoint;
     if (!myDoorPoints.size())
     {
         startCornerIndex = 0;
-        startWallPoint = myWallPoints[0];
-        switch (side(myWallPoints[0], myWallPoints[1]))
-        {
-        case eMargin::top:
-            startWallPoint.x += theSeperation;
-            break;
-        case eMargin::right:
-            startWallPoint.y += theSeperation;
-            break;
-        case eMargin::bottom:
-            startWallPoint.x += theSeperation;
-            break;
-        case eMargin::left:
-            startWallPoint.y -= theSeperation;
-            break;
-        }
+        startPoint = cxy(x,y);
     }
     else
     {
         // layout pipes through the door to the furnace room
-        pipeDoor();
+        startPoint = pipeDoor();
 
         startCornerIndex = myDoorPoints[0] - 1;
         if (startCornerIndex == -1)
             startCornerIndex = myWallPoints.size() - 1;
-        startWallPoint = doorCenter(
-            myWallPoints, myDoorPoints[0]);
+
     }
 
     auto spiral = spiralMaker(
         corners.getCorners(),
         startCornerIndex,
-        startWallPoint,
+        startPoint,
         myMaxDim);
 
     myPipePoints.push_back(spiral);
