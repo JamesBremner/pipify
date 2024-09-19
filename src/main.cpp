@@ -48,6 +48,7 @@ cxy doorCenter(
 /// @param polygon room with doors removed ( closed polygon )
 /// @param startCornerIndex polygon index where spiral wraps around
 /// @param startPoint spiral starting point
+/// @param doorCenter
 /// @param maxDim rom maximum dimension extent
 /// @return spiral pipeline
 
@@ -55,20 +56,51 @@ std::pair<cPipeline, cPipeline> spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
     const cxy &startPoint,
+    const cxy &doorCenter,
     double maxDim)
 {
+    int sep = cRoom::seperation();
+    int sepret = sep / 2;
+
     // spiral to be returned
     std::vector<cxy> spiral, spiralReturn;
 
     spiral.push_back(startPoint);
 
-    // // starting side
+    // starting side
     int ip2 = startCornerIndex + 1;
     if (ip2 == polygon.size())
         ip2 = 0;
 
-    int sep = cRoom::seperation();
-    int sepret = sep / 2;
+    switch (cRoom::side(
+        polygon[startCornerIndex],
+        polygon[ip2]))
+    {
+    case eMargin::top:
+        spiralReturn.emplace_back(
+            doorCenter.x - sep, doorCenter.y );
+        spiralReturn.emplace_back(
+            startPoint.x - sep, startPoint.y + sepret);
+        break;
+    case eMargin::right:
+        spiralReturn.emplace_back(
+            doorCenter.x, doorCenter.y - sep );
+        spiralReturn.emplace_back(
+            startPoint.x - sepret, startPoint.y - sep);
+        break;
+    case eMargin::bottom:
+        spiralReturn.emplace_back(
+            doorCenter.x - sep, doorCenter.y );
+        spiralReturn.emplace_back(
+            startPoint.x - sep, startPoint.y - sepret);
+        break;
+    case eMargin::left:
+        spiralReturn.emplace_back(
+            doorCenter.x, doorCenter.y + sep );
+        spiralReturn.emplace_back(
+            startPoint.x + sepret, startPoint.y + sep);
+        break;
+    }
 
     int wallsep = sep;
     for (int bendIndex = ip2; true; bendIndex++)
@@ -826,6 +858,7 @@ void cRoom::pipeConvex(int x, int y)
         corners.getCorners(),
         startCornerIndex,
         startPoint,
+        doorCenter(myWallPoints, myDoorPoints[0]),
         myMaxDim);
 
     myPipePoints.push_back(spiral.first);
