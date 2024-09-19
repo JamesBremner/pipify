@@ -184,6 +184,9 @@ std::pair<cPipeline, cPipeline> spiralMaker(
         spiralReturn.push_back(bendReturn);
     }
 
+    spiralReturn.push_back(
+        spiral.back()    );
+
     return std::make_pair(
         cPipeline(
             cPipeline::ePipe::hot,
