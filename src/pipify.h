@@ -32,10 +32,8 @@ public:
     enum class ePipe
     {
         none,
-        door,
-        spiral,
-        ring,
-        subroom,
+        hot,
+        ret,
     };
     ePipe myType;
     std::vector<cxy> myLine;
@@ -113,7 +111,7 @@ public:
     /// @return
     std::vector<std::vector<cxy>> wallSegments();
 
-    std::vector<cPipeline> pipes() const
+    std::vector<cPipeline> pipes() 
     {
         return myPipePoints;
     }

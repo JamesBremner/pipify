@@ -110,10 +110,6 @@ private:
     void drawHousePipes(
         wex::shapes &S);
 
-    void drawFurnacePipes(
-        wex::shapes &S,
-        int ir);
-
     void drawWalls(
         wex::shapes &S,
         const std::vector<std::vector<cxy>> &walls);
