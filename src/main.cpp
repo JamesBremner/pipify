@@ -51,14 +51,14 @@ cxy doorCenter(
 /// @param maxDim rom maximum dimension extent
 /// @return spiral pipeline
 
-cPipeline spiralMaker(
+std::pair<cPipeline, cPipeline> spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
     const cxy &startPoint,
     double maxDim)
 {
     // spiral to be returned
-    std::vector<cxy> spiral;
+    std::vector<cxy> spiral, spiralReturn;
 
     spiral.push_back(startPoint);
 
@@ -68,6 +68,7 @@ cPipeline spiralMaker(
         ip2 = 0;
 
     int sep = cRoom::seperation();
+    int sepret = sep / 2;
 
     int wallsep = sep;
     for (int bendIndex = ip2; true; bendIndex++)
@@ -83,6 +84,7 @@ cPipeline spiralMaker(
             ip2 = 1;
 
         cxy bendPoint = polygon[bendIndex];
+        cxy bendReturn;
 
         bool fspiralwrap = false;
         if (bendIndex == startCornerIndex)
@@ -111,24 +113,32 @@ cPipeline spiralMaker(
             bendPoint.y += wallsep;
             if (fspiralwrap)
                 bendPoint.y -= sep;
+            bendReturn.x = bendPoint.x - sepret;
+            bendReturn.y = bendPoint.y + sepret;
             break;
         case eCorner::br_vex:
             bendPoint.x -= wallsep;
             bendPoint.y -= wallsep;
             if (fspiralwrap)
                 bendPoint.x += sep;
+            bendReturn.x = bendPoint.x - sepret;
+            bendReturn.y = bendPoint.y - sepret;
             break;
         case eCorner::bl_vex:
             bendPoint.x += wallsep;
             bendPoint.y -= wallsep;
             if (fspiralwrap)
                 bendPoint.y += sep;
+            bendReturn.x = bendPoint.x + sepret;
+            bendReturn.y = bendPoint.y - sepret;
             break;
         case eCorner::tl_vex:
             bendPoint.x += wallsep;
             bendPoint.y += wallsep;
             if (fspiralwrap)
                 bendPoint.x -= sep;
+            bendReturn.x = bendPoint.x + sepret;
+            bendReturn.y = bendPoint.y + sepret;
             break;
         default:
             throw std::runtime_error(
@@ -139,11 +149,16 @@ cPipeline spiralMaker(
             break;
 
         spiral.push_back(bendPoint);
+        spiralReturn.push_back(bendReturn);
     }
 
-    return cPipeline(
-        cPipeline::ePipe::hot,
-        spiral);
+    return std::make_pair(
+        cPipeline(
+            cPipeline::ePipe::hot,
+            spiral),
+        cPipeline(
+            cPipeline::ePipe::ret,
+            spiralReturn));
 }
 
 cRoom::cRoom(
@@ -813,7 +828,8 @@ void cRoom::pipeConvex(int x, int y)
         startPoint,
         myMaxDim);
 
-    myPipePoints.push_back(spiral);
+    myPipePoints.push_back(spiral.first);
+    myPipePoints.push_back(spiral.second);
 }
 
 void cRoom::boundingRectangle()

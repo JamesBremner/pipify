@@ -167,47 +167,6 @@ void doorReturnLineSegment(
     //           << "\n";
 }
 
-void spiralReturnLineSegment(
-    int &rx1, int &ry1, int &rx2, int &ry2,
-    int x1, int y1, int x2, int y2,
-    eCorner corner,
-    int sep)
-{
-    switch (corner)
-    {
-    case eCorner::tl_vex:
-        rx1 = x1 + sep;
-        ry1 = y1 - sep;
-        rx2 = x2 + sep;
-        ry2 = y2 + sep;
-        break;
-    case eCorner::tr_vex:
-        rx1 = x1 + sep;
-        ry1 = y1 + sep;
-        rx2 = x2 - sep;
-        ry2 = y2 + sep;
-        break;
-    case eCorner::br_vex:
-        rx1 = x1 - sep;
-        ry1 = y1 + sep;
-        rx2 = x2 - sep;
-        ry2 = y2 - sep;
-        break;
-    case eCorner::bl_vex:
-        rx1 = x1 - sep;
-        ry1 = y1 - sep;
-        rx2 = x2 + sep;
-        ry2 = y2 - sep;
-        break;
-    case eCorner::error:
-        // if (p.y == pipesegment[ip - 1].y)
-        // {
-        //     S.line({x1, y1 + outInSep, x2 + outInSep, y2 + outInSep});
-        // }
-        break;
-    }
-}
-
 void cGUI::drawPipes(
     wex::shapes &S,
     const std::vector<cPipeline> &pipes)
