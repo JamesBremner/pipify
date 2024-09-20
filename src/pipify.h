@@ -45,6 +45,11 @@ public:
           myLine(bends)
     {
     }
+    cPipeline()
+    : myType( ePipe::none)
+    {
+        
+    }
     void set(ePipe type)
     {
         myType = type;

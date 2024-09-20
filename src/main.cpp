@@ -49,6 +49,95 @@ cxy doorCenter(
     return ret;
 }
 
+std::pair<cPipeline, cPipeline> connectSpiralDoor(
+    const std::vector<cxy> &polygon,
+    int startCornerIndex,
+    const cxy &doorCenter)
+{
+    std::vector<cxy> spiral, spiralReturn;
+
+    int sep = cRoom::seperation();
+    int sepret = sep / 2;
+
+    int ip2 = startCornerIndex + 1;
+    if (ip2 == polygon.size())
+        ip2 = 0;
+
+    switch (cRoom::side(
+        polygon[startCornerIndex],
+        polygon[ip2]))
+    {
+    case eMargin::top:
+        spiral.push_back(doorCenter);
+        spiral.emplace_back(doorCenter.x, doorCenter.y+sep);
+        spiral.emplace_back(
+            polygon[ip2].x - sep,
+            polygon[ip2].y + sep);
+        spiralReturn.emplace_back(
+            doorCenter.x-sep, doorCenter.y);
+        spiralReturn.emplace_back(
+            doorCenter.x-sep, doorCenter.y+1.5 * sep);
+        spiralReturn.emplace_back(
+            polygon[ip2].x - 1.5 * sep,
+            polygon[ip2].y + 1.5 * sep);
+        break;
+
+    case eMargin::right:
+        spiral.push_back(doorCenter);
+        spiral.emplace_back(doorCenter.x-sep, doorCenter.y);
+        spiral.emplace_back(
+            polygon[ip2].x - sep,
+            polygon[ip2].y - sep);
+        spiralReturn.emplace_back(
+            doorCenter.x, doorCenter.y-sep);
+        spiralReturn.emplace_back(
+            doorCenter.x - 1.5 * sep, doorCenter.y-sep);
+        spiralReturn.emplace_back(
+            polygon[ip2].x - 1.5 * sep,
+            polygon[ip2].y - 1.5 * sep);
+        break;
+
+    case eMargin::bottom:
+        spiral.push_back(doorCenter);
+        spiral.emplace_back(doorCenter.x, doorCenter.y - sep);
+        spiral.emplace_back(
+            polygon[ip2].x + sep,
+            polygon[ip2].y - sep);
+        spiralReturn.emplace_back(
+            doorCenter.x - sep, doorCenter.y);
+        spiralReturn.emplace_back(
+            doorCenter.x - sep, doorCenter.y - 1.5 * sep);
+        spiralReturn.emplace_back(
+            polygon[ip2].x + 1.5 * sep,
+            polygon[ip2].y - 1.5 * sep);
+        break;
+
+    case eMargin::left:
+        spiral.push_back(doorCenter);
+        spiral.emplace_back(doorCenter.x+sep, doorCenter.y);
+        spiral.emplace_back(
+            polygon[ip2].x + sep,
+            polygon[ip2].y + sep);
+        spiralReturn.emplace_back(
+            doorCenter.x, doorCenter.y+sep);
+        spiralReturn.emplace_back(
+            doorCenter.x + 1.5 * sep, doorCenter.y+sep);
+        spiralReturn.emplace_back(
+            polygon[ip2].x + 1.5 * sep,
+            polygon[ip2].y + 1.5 * sep);
+        break;
+    }
+
+    return std::make_pair(
+        cPipeline(
+            cPipeline::ePipe::hot,
+            spiral),
+        cPipeline(
+            cPipeline::ePipe::ret,
+            spiralReturn));
+
+}
+
 /// @brief Make the pipe spiral in a convex room
 /// @param polygon room with doors removed ( closed polygon )
 /// @param startCornerIndex polygon index where spiral wraps around
@@ -60,7 +149,7 @@ cxy doorCenter(
 std::pair<cPipeline, cPipeline> spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
-    const std::pair<cxy,cxy> &startPoints,
+    const std::pair<cxy, cxy> &xxx,
     const cxy &doorCenter,
     double maxDim)
 {
@@ -70,8 +159,8 @@ std::pair<cPipeline, cPipeline> spiralMaker(
     // spiral to be returned
     std::vector<cxy> spiral, spiralReturn;
 
-    spiral.push_back(startPoints.first);
-    spiralReturn.push_back(startPoints.second);
+    // spiral.push_back(startPoints.first);
+    // spiralReturn.push_back(startPoints.second);
 
     // starting side
     int ip2 = startCornerIndex + 1;
@@ -183,13 +272,16 @@ std::pair<cPipeline, cPipeline> spiralMaker(
                 "spiral NYI");
         }
 
-        if (spiral.back().dist2(bendPoint) < sep * sep)
-            break;
+        // check for spiral vanishing
+        if (spiral.size())
+            if (spiral.back().dist2(bendPoint) < sep * sep)
+                break;
 
         spiral.push_back(bendPoint);
         spiralReturn.push_back(bendReturn);
     }
 
+    // connect hot to cold at spiral center
     spiralReturn.push_back(
         spiral.back());
 
@@ -201,8 +293,6 @@ std::pair<cPipeline, cPipeline> spiralMaker(
             cPipeline::ePipe::ret,
             spiralReturn));
 }
-
-
 
 std::pair<cRoom, cRoom> concaveMakeSubRooms(
     const cRoom &ConcaveRoom,
@@ -413,7 +503,6 @@ sConcaveSplit concaveSplit(
 
     return ret;
 }
-
 
 cRoom::cRoom(
     const std::string &name,
@@ -847,15 +936,14 @@ void cRoom::pipe()
 
     case eCorner::error:
     default:
-        pipeConvex(std::make_pair(cxy(),cxy()));
+        pipeConvex(std::make_pair(cxy(), cxy()));
         break;
     }
 }
 
-
 void cRoom::addSubroomPipes(
     cRoom &subroom,
-    std::pair<cxy,cxy>& joins)
+    std::pair<cxy, cxy> &joins)
 {
     // layout pipes in subroom
     subroom.pipeConvex(joins);
@@ -869,7 +957,7 @@ void cRoom::concavePipe(int concaveIndex)
 {
     // split concave room into 2 convex rooms
 
-    auto subrooms = concaveSplit(*this );
+    auto subrooms = concaveSplit(*this);
 
     addSubroomPipes(subrooms.rooms.first, subrooms.joins);
     addSubroomPipes(subrooms.rooms.second, subrooms.joins);
@@ -878,32 +966,36 @@ void cRoom::concavePipe(int concaveIndex)
 }
 
 void cRoom::pipeConvex(
-    const std::pair<cxy,cxy>& joins)
+    const std::pair<cxy, cxy> &joins)
 {
     std::cout << "=>pipeConvex " << myName << " "
-              << joins.first.x << " " << joins.first.y <<" "
+              << joins.first.x << " " << joins.first.y << " "
               << joins.second.x << " " << joins.second.y << "\n";
 
     cCorners corners(*this);
 
     int startCornerIndex;
-    //cxy startPoint;
+    // cxy startPoint;
     if (!myDoorPoints.size())
     {
         // room has no doors
         // needs to connect the spiral to the nearest pipe in the subroom that does have a door
         // assume that other subroom has already been calculated
         startCornerIndex = 0;
-        //startPoint = joins.first;
+        // startPoint = joins.first;
     }
     else
     {
-        // layout pipes through the door to the furnace room
-       // startPoint = pipeDoor();
-
         startCornerIndex = myDoorPoints[0] - 1;
         if (startCornerIndex == -1)
             startCornerIndex = myWallPoints.size() - 1;
+
+        auto spiral = connectSpiralDoor(
+            corners.getCorners(),
+            startCornerIndex,
+            myDoorCenter);
+        myPipePoints.push_back(spiral.first);
+        myPipePoints.push_back(spiral.second);
     }
 
     auto spiral = spiralMaker(
