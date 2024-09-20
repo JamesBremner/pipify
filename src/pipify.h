@@ -85,6 +85,7 @@ class cRoom
     std::string myName;
     std::vector<cxy> myWallPoints;                   // room walls specified by a clockwise open polygon of 2D points
     std::vector<int> myDoorPoints;                   // indices in myWallPoints of first point of pairs specifying doors
+    cxy myDoorCenter;
     double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
 
     std::vector<cPipeline> myPipePoints;

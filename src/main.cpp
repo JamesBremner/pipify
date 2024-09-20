@@ -17,6 +17,11 @@ int cRoom::theSeperation;
 
 int cRoom::thefurnaceRoomIndex;
 
+/// @brief Locate the center of the first door
+/// @param wall walls and doors of the room
+/// @param index index of first door point
+/// @return location of door center
+
 cxy doorCenter(
     const std::vector<cxy> &wall,
     int index)
@@ -78,25 +83,25 @@ std::pair<cPipeline, cPipeline> spiralMaker(
     {
     case eMargin::top:
         spiralReturn.emplace_back(
-            doorCenter.x - sep, doorCenter.y );
+            doorCenter.x - sep, doorCenter.y);
         spiralReturn.emplace_back(
             startPoint.x - sep, startPoint.y + sepret);
         break;
     case eMargin::right:
         spiralReturn.emplace_back(
-            doorCenter.x, doorCenter.y - sep );
+            doorCenter.x, doorCenter.y - sep);
         spiralReturn.emplace_back(
             startPoint.x - sepret, startPoint.y - sep);
         break;
     case eMargin::bottom:
         spiralReturn.emplace_back(
-            doorCenter.x - sep, doorCenter.y );
+            doorCenter.x - sep, doorCenter.y);
         spiralReturn.emplace_back(
             startPoint.x - sep, startPoint.y - sepret);
         break;
     case eMargin::left:
         spiralReturn.emplace_back(
-            doorCenter.x, doorCenter.y + sep );
+            doorCenter.x, doorCenter.y + sep);
         spiralReturn.emplace_back(
             startPoint.x + sepret, startPoint.y + sep);
         break;
@@ -185,7 +190,7 @@ std::pair<cPipeline, cPipeline> spiralMaker(
     }
 
     spiralReturn.push_back(
-        spiral.back()    );
+        spiral.back());
 
     return std::make_pair(
         cPipeline(
@@ -210,7 +215,11 @@ cRoom::cRoom(
     myWallPoints = wallPoints;
     myDoorPoints = doorPoints;
     boundingRectangle();
-    // pipe();
+
+    if (doorPoints.size())
+        myDoorCenter = doorCenter(
+            myWallPoints,
+            myDoorPoints[0]);
 }
 
 void cRoom::add(
@@ -406,10 +415,9 @@ cxy cRoom::pipeDoor()
 {
     cxy p1, p2, p3;
 
-    p1 = doorCenter(myWallPoints, myDoorPoints[0]);
-
     // start at the first door
     // There should be only one door
+    p1 = myDoorCenter;
     cxy d1 = myWallPoints[myDoorPoints[0]];
     cxy d2 = myWallPoints[myDoorPoints[0] + 1];
 
@@ -861,7 +869,7 @@ void cRoom::pipeConvex(int x, int y)
         corners.getCorners(),
         startCornerIndex,
         startPoint,
-        doorCenter(myWallPoints, myDoorPoints[0]),
+        myDoorCenter,
         myMaxDim);
 
     myPipePoints.push_back(spiral.first);
