@@ -185,11 +185,11 @@ public:
     std::pair<cxy, cxy> find(eMargin m) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
-    /// @param startPoint
-    /// for a doored room, the startPoint locates the hot point in the doorway
-    /// for an undoored room ( concave subroom ) the nearest pipe point in doored subroom
+    /// @param joins
+    /// for a doored room, joins is ignored
+    /// for an undoored room ( concave subroom ) the nearest pipe points in doored subroom
 
-    void pipeConvex(int x = 0, int y = 0);
+    void pipeConvex(const std::pair<cxy,cxy>& joins);
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
@@ -208,6 +208,10 @@ public:
     /// @brief layout pipes in furnace room
 
     void pipefurnaceRoom();
+
+    void addSubroomPipes(
+        cRoom& subroom,
+        std::pair<cxy,cxy>& joinPoint );
 
     /// @brief layout pipes in every room of the house
 
@@ -344,13 +348,21 @@ public:
 
 bool unitTest();
 
+struct sConcaveSplit
+{
+    std::pair<cRoom, cRoom> rooms;  // doored subroom, doorless subroom
+    std::pair<cxy,cxy> joins;       // hot start, return start
+};
+
 /// @brief Split concave room into two convex rooms
 /// @param[in] ConcaveRoom to be split
-/// @param[out] joinPoint where the 2nd room pipe joins the first room pipe
-/// @return pair of convex rooms
+/// @return rooms and join points
 
-std::pair<cRoom,cRoom> concaveSplit(
-    const cRoom& ConcaveRoom,
-    cxy& joinPoint );
+sConcaveSplit concaveSplit(
+    const cRoom &ConcaveRoom);
+
+
+
+
 
 
