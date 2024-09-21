@@ -2,7 +2,7 @@
 
 Design the underfloor heating of a house by laying out the pipes in a spiral in each room.
 
-## Specication of the rooms in a house
+## Specification of the rooms in a house
 
 Each room is specified by a clockwise open polygon of 2D points ( Every corner is specified by one point, every door is specified by a pair of points. ) and a vector of indices in the polygon of the first point of a pair specifying a door
 
