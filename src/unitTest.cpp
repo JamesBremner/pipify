@@ -5,6 +5,14 @@
 
 bool unitTest()
 {
+
+    cRoom::readfile("../dat/L3.txt");
+    auto subRooms = concaveSplit(
+        cRoom::getRooms()[0]);
+
+        
+    subRooms.rooms.second.pipeConvex(std::make_pair(cxy(),cxy()));
+
     cRoom::readfile("../dat/r1.text");
     auto segs = cRoom::houseWallSegments();
 
@@ -34,10 +42,7 @@ bool unitTest()
     // subRooms.first.pipeConvex();
     // subRooms.second.pipeConvex();
 
-    cRoom::readfile("../dat/L2.txt");
-    auto subRooms = concaveSplit(
-        cRoom::getRooms()[0]);
-    subRooms.rooms.second.pipeConvex(std::make_pair(cxy(),cxy()));
+
 
     cxy p1(0, 1);
     cxy p2(0, 0);

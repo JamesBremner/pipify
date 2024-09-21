@@ -48,7 +48,7 @@ public:
     cPipeline()
     : myType( ePipe::none)
     {
-        
+
     }
     void set(ePipe type)
     {
@@ -347,6 +347,14 @@ public:
 
     /// corner index from wallpoint index
     int index(int wp) const;
+
+    /// wallpoint index from corner index
+    int wpIndex( int c )
+    {
+        if( 0 > c || c > myIndices.size()-1)
+            return -1;
+        return myIndices[ c ];
+    }
 };
 
 // free functions
