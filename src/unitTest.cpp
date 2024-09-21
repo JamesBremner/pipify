@@ -6,8 +6,11 @@
 bool unitTest()
 {
 
-    cRoom::readfile("../dat/L3.txt");
+    cRoom::readfile("../dat/L.txt");
     auto subRooms = concaveSplit(
+        cRoom::getRooms()[0]);
+    cRoom::readfile("../dat/L3.txt");
+    subRooms = concaveSplit(
         cRoom::getRooms()[0]);
 
         
@@ -33,16 +36,6 @@ bool unitTest()
         return false;
     if (C.index(3) != 1)
         return false;
-
-     cRoom::readfile("../dat/L.text");
-     cxy jointPoint;
-    // auto subRooms = ConcaveSplit(
-    //     cRoom::getRooms()[0],
-    //     jointPoint );
-    // subRooms.first.pipeConvex();
-    // subRooms.second.pipeConvex();
-
-
 
     cxy p1(0, 1);
     cxy p2(0, 0);
