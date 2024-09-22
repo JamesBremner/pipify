@@ -1058,21 +1058,10 @@ void cRoom::pipefurnaceRoom()
 }
 void cRoom::pipe()
 {
-    int concaveIndex;
-    switch (isConcave(concaveIndex))
-    {
-    case eCorner::bl_cav:
-    case eCorner::br_cav:
-    case eCorner::tl_cav:
-    case eCorner::tr_cav:
-        concavePipe(concaveIndex);
-        break;
-
-    case eCorner::error:
-    default:
+    if( myConcaveIndex >= 0 )
+        concavePipe(myConcaveIndex);
+    else
         pipeConvex();
-        break;
-    }
 }
 
 void cRoom::addSubroomPipes(
