@@ -92,6 +92,7 @@ class cRoom
     std::vector<int> myDoorPoints;                   // indices in myWallPoints of first point of pairs specifying doors
     cxy myDoorCenter;
     double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
+    int myConcaveIndex;
 
     std::vector<cPipeline> myPipePoints;
 

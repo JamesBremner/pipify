@@ -9,6 +9,9 @@ bool unitTest()
     cRoom::readfile("../dat/L.txt");
     auto subRooms = concaveSplit(
         cRoom::getRooms()[0]);
+    subRooms.rooms.second.pipeConvex(
+        subRooms.joins );
+
     cRoom::readfile("../dat/L3.txt");
     subRooms = concaveSplit(
         cRoom::getRooms()[0]);
