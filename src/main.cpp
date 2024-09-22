@@ -523,11 +523,10 @@ void insertDoor(
     }
 }
 
-sConcaveSplit concaveSplit(
+ std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom)
 {
-    sConcaveSplit ret;
-    cxy joinPoint;
+     std::pair<cRoom, cRoom> ret;
     std::pair<cxy, cxy> oppositeWall, newWall;
     int concaveIndex, firstOppositeIndex;
     std::vector<cxy> subRoom1Wall, subRoom2Wall;
@@ -593,14 +592,6 @@ sConcaveSplit concaveSplit(
                 break;
             }
         }
-
-        joinPoint = noDoors[concaveIndex];
-        joinPoint.x -= cRoom::seperation();
-        joinPoint.y += cRoom::seperation();
-        ret.joins.first = joinPoint;
-        joinPoint.y -= cRoom::seperation() / 2;
-        ret.joins.second = joinPoint;
-
         break;
 
     case eCorner::tl_cav:
@@ -659,10 +650,7 @@ sConcaveSplit concaveSplit(
         subRoom2Wall.clear();
         subRoom2Wall.push_back(newWall.first);
         subRoom2Wall.push_back(newWall.second);
-        {
-            int dbg = ConcaveRoom.getWallDoorIndex(oppositeWall.second);
-            int dbg2 = 0;
-        }
+
         for (
             int ip = ConcaveRoom.getWallDoorIndex(oppositeWall.second);
             ip < ConcaveRoom.getWallDoorIndex(newWall.first);
@@ -670,13 +658,6 @@ sConcaveSplit concaveSplit(
         {
             subRoom2Wall.push_back(ConcaveRoom.getWallDoorPoint(ip));
         }
-
-        joinPoint = newWall.second;
-        joinPoint.x += cRoom::seperation();
-        joinPoint.y -= cRoom::seperation();
-        ret.joins.first = joinPoint;
-        joinPoint.y -= cRoom::seperation() / 2;
-        ret.joins.second = joinPoint;
 
         break;
 
@@ -692,7 +673,7 @@ sConcaveSplit concaveSplit(
         wps, dps[0]);
 
     // create subrooms from walls
-    ret.rooms = concaveMakeSubRooms(
+    ret = concaveMakeSubRooms(
         ConcaveRoom,
         subRoom1Wall, subRoom1Doors,
         subRoom2Wall, subRoom2Doors);
@@ -1095,8 +1076,7 @@ void cRoom::pipe()
 }
 
 void cRoom::addSubroomPipes(
-    cRoom &subroom,
-    std::pair<cxy, cxy> &joins)
+    cRoom &subroom )
 {
     // layout pipes in subroom
     subroom.pipeConvex();
@@ -1116,15 +1096,13 @@ void cRoom::concavePipe(int concaveIndex)
 
     auto subrooms = concaveSplit(*this);
 
-    addSubroomPipes(subrooms.rooms.first, subrooms.joins);
-    addSubroomPipes(subrooms.rooms.second, subrooms.joins);
+    addSubroomPipes(subrooms.first);
+    addSubroomPipes(subrooms.second);
 }
 
 void cRoom::pipeConvex()
 {
-    // std::cout << "=>pipeConvex " << myName << " "
-    //           << joins.first.x << " " << joins.first.y << " "
-    //           << joins.second.x << " " << joins.second.y << "\n";
+    // std::cout << "=>pipeConvex " << myName << "\n";
 
     cCorners corners(*this);
 

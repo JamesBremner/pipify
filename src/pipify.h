@@ -219,8 +219,7 @@ public:
     }
 
     void addSubroomPipes(
-        cRoom& subroom,
-        std::pair<cxy,cxy>& joinPoint );
+        cRoom& subroom );
 
     /// @brief layout pipes in every room of the house
 
@@ -365,17 +364,11 @@ public:
 
 bool unitTest();
 
-struct sConcaveSplit
-{
-    std::pair<cRoom, cRoom> rooms;  // doored subroom, doorless subroom
-    std::pair<cxy,cxy> joins;       // hot start, return start
-};
-
 /// @brief Split concave room into two convex rooms
 /// @param[in] ConcaveRoom to be split
-/// @return rooms and join points
+/// @return rooms 
 
-sConcaveSplit concaveSplit(
+ std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom);
 
 
