@@ -25,10 +25,10 @@ double angle(
     for (int i = 1; i < poly.size() - 2; i++)
     {
         a = cxy::clockwise(poly[i - 1], poly[i], poly[i + 1]) / 3.142;
-        std::cout << a << " ";
+        //std::cout << a << " ";
     }
 
-    std::cout << "\n";
+    //std::cout << "\n";
     return a;
 }
 
@@ -213,32 +213,47 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
             cPipeline::ePipe::ret,
             spiralReturn));
 }
+/// @brief add connectiing pipelines between subrooms
+/// @param subroom
 
-std::pair<cPipeline, cPipeline> connectSpiralSpiral(
-    cxy &concaveCorner,
-    cxy &spiralstart)
+void connectSpiralSpiral(
+    cRoom &subroom,
+    const cxy &concavePoint)
 {
-    std::vector<cxy> spiral, spiralReturn;
 
-    int sep = cRoom::seperation();
-    int sepret = sep / 2;
+    if (subroom.doorCount())
+    {
+        // The connection between the subrooms must be done once
+        // best done for the subroom without a door
+        return;
+    }
 
-    spiral.push_back(spiralstart);
-    spiral.push_back(concaveCorner);
+    // connect to the subroom spiral start
+    cxy noDoorStartHot = subroom.pipes()[0].myLine[0];
+    cxy noDoorStartRet = subroom.pipes()[1].myLine[0];
 
-    return std::make_pair(
-        cPipeline(
-            cPipeline::ePipe::hot,
-            spiral),
-        cPipeline(
-            cPipeline::ePipe::ret,
-            spiralReturn));
+    // connect to the nearest point of the other subroom spiral
+    cxy doorSpiralHot = concavePoint;
+    doorSpiralHot.x -= cRoom::seperation();
+    doorSpiralHot.y += cRoom::seperation();
+    cxy doorSpiralRet;
+    doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
+    doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
+
+    // add connecting pipeline to subroom
+    cPipeline plhot(
+        cPipeline::ePipe::hot,
+        {doorSpiralHot, noDoorStartHot});
+    subroom.add(plhot);
+    cPipeline plret(
+        cPipeline::ePipe::ret,
+        {doorSpiralRet, noDoorStartRet});
+    subroom.add(plret);
 }
 
 /// @brief Make the pipe spiral in a convex room
 /// @param polygon room with doors removed ( closed polygon )
 /// @param startCornerIndex polygon index where spiral wraps around
-/// @param startPoints spiral starting points
 /// @param doorCenter
 /// @param maxDim rom maximum dimension extent
 /// @return spiral pipeline
@@ -246,7 +261,6 @@ std::pair<cPipeline, cPipeline> connectSpiralSpiral(
 std::pair<cPipeline, cPipeline> spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
-    const std::pair<cxy, cxy> &xxx,
     const cxy &doorCenter,
     double maxDim)
 {
@@ -708,7 +722,7 @@ cRoom::cRoom(
 
     angle(myWallPoints);
 
-    isConcave( myConcaveIndex );
+    isConcave(myConcaveIndex);
 }
 
 void cRoom::add(
@@ -846,7 +860,7 @@ eCorner cRoom::isConcave(int &index) const
 {
     cCorners corners(*this);
     auto ret = concavefind(index, corners.getCorners());
-    if( ret == eCorner::error )
+    if (ret == eCorner::error)
         index = -1;
     else
         index = corners.wpIndex(index);
@@ -1075,7 +1089,7 @@ void cRoom::pipe()
 
     case eCorner::error:
     default:
-        pipeConvex(std::make_pair(cxy(), cxy()));
+        pipeConvex();
         break;
     }
 }
@@ -1085,35 +1099,15 @@ void cRoom::addSubroomPipes(
     std::pair<cxy, cxy> &joins)
 {
     // layout pipes in subroom
-    subroom.pipeConvex(joins);
+    subroom.pipeConvex();
+
+    connectSpiralSpiral(
+        subroom,
+        myWallPoints[myConcaveIndex]);
 
     // add subroom pipes to this room
     for (auto &l : subroom.myPipePoints)
         myPipePoints.push_back(l);
-
-    if ( ! subroom.doorCount())
-    {
-        cxy noDoorStartHot = subroom.myPipePoints[0].myLine[0];
-        cxy noDoorStartRet = subroom.myPipePoints[1].myLine[0];
-        cxy doorSpiralHot = myWallPoints[myConcaveIndex];
-        doorSpiralHot.x -= cRoom::seperation();
-        doorSpiralHot.y += cRoom::seperation();
-        cxy doorSpiralRet;
-        doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation()/2;
-        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation()/2;
-        
-        cPipeline plhot(
-            cPipeline::ePipe::hot,
-            { doorSpiralHot,noDoorStartHot});
-        myPipePoints.push_back( plhot );
-        cPipeline plret(
-            cPipeline::ePipe::ret,
-            { doorSpiralRet,noDoorStartRet});
-        myPipePoints.push_back( plret );
-        
-        int dbg = 0;
-    }
-
 }
 
 void cRoom::concavePipe(int concaveIndex)
@@ -1124,34 +1118,22 @@ void cRoom::concavePipe(int concaveIndex)
 
     addSubroomPipes(subrooms.rooms.first, subrooms.joins);
     addSubroomPipes(subrooms.rooms.second, subrooms.joins);
-
-    // connectSpiralSpiral(
-    //     myWallPoints[ concaveIndex],
-    //     subrooms.rooms.second.
-
-    // )
-
-    return;
 }
 
-void cRoom::pipeConvex(
-    const std::pair<cxy, cxy> &joins)
+void cRoom::pipeConvex()
 {
-    std::cout << "=>pipeConvex " << myName << " "
-              << joins.first.x << " " << joins.first.y << " "
-              << joins.second.x << " " << joins.second.y << "\n";
+    // std::cout << "=>pipeConvex " << myName << " "
+    //           << joins.first.x << " " << joins.first.y << " "
+    //           << joins.second.x << " " << joins.second.y << "\n";
 
     cCorners corners(*this);
 
     int startCornerIndex;
-    cxy startPoint;
     if (!myDoorPoints.size())
     {
         // room has no doors
-        // needs to connect the spiral to the nearest pipe in the subroom that does have a door
-        // assume that other subroom has already been calculated
+        
         startCornerIndex = 0;
-        startPoint = joins.first;
     }
     else
     {
@@ -1172,7 +1154,6 @@ void cRoom::pipeConvex(
     auto spiral = spiralMaker(
         corners.getCorners(),
         startCornerIndex,
-        joins,
         myDoorCenter,
         myMaxDim);
 

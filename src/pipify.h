@@ -191,11 +191,9 @@ public:
     std::pair<cxy, cxy> find(eMargin m) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
-    /// @param joins
-    /// for a doored room, joins is ignored
-    /// for an undoored room ( concave subroom ) the nearest pipe points in doored subroom
+    
+    void pipeConvex();
 
-    void pipeConvex(const std::pair<cxy,cxy>& joins);
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
@@ -214,6 +212,11 @@ public:
     /// @brief layout pipes in furnace room
 
     void pipefurnaceRoom();
+
+    void add( const cPipeline& pipeline)
+    {
+        myPipePoints.push_back( pipeline );
+    }
 
     void addSubroomPipes(
         cRoom& subroom,

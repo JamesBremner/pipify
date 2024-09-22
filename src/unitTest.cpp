@@ -9,15 +9,14 @@ bool unitTest()
     cRoom::readfile("../dat/L.txt");
     auto subRooms = concaveSplit(
         cRoom::getRooms()[0]);
-    subRooms.rooms.second.pipeConvex(
-        subRooms.joins );
+    subRooms.rooms.second.pipeConvex();
 
     cRoom::readfile("../dat/L3.txt");
     subRooms = concaveSplit(
         cRoom::getRooms()[0]);
 
         
-    subRooms.rooms.second.pipeConvex(std::make_pair(cxy(),cxy()));
+    subRooms.rooms.second.pipeConvex();
 
     cRoom::readfile("../dat/r1.text");
     auto segs = cRoom::houseWallSegments();
