@@ -19,13 +19,16 @@ enum class eCorner
     bottom,
     left,
 };
-    enum class eMargin
-    {
-        top,
-        right,
-        bottom,
-        left
-    };
+enum class eMargin
+{
+    top,
+    right,
+    bottom,
+    left
+};
+
+typedef std::pair<cxy, cxy> wall_t;
+
 class cPipeline
 {
 public:
@@ -46,9 +49,8 @@ public:
     {
     }
     cPipeline()
-    : myType( ePipe::none)
+        : myType(ePipe::none)
     {
-
     }
     void set(ePipe type)
     {
@@ -83,20 +85,19 @@ public:
 class cRoom
 {
 
-    static std::vector<cRoom> theHouse;     // the house composed of rooms
-    static int theSeperation;               // separation between hot pipes, user units
+    static std::vector<cRoom> theHouse; // the house composed of rooms
+    static int theSeperation;           // separation between hot pipes, user units
     static int thefurnaceRoomIndex;
 
     std::string myName;
-    std::vector<cxy> myWallPoints;                   // room walls specified by a clockwise open polygon of 2D points
-    std::vector<int> myDoorPoints;                   // indices in myWallPoints of first point of pairs specifying doors
+    std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
+    std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
     cxy myDoorCenter;
     double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
     int myConcaveIndex;
     eCorner myConcaveCorner;
 
     std::vector<cPipeline> myPipePoints;
- 
 
 public:
     cRoom(
@@ -115,12 +116,12 @@ public:
     {
         return myName;
     }
-    
+
     /// @brief get the wall segments, ready to draw the room wall
     /// @return
     std::vector<std::vector<cxy>> wallSegments();
 
-    std::vector<cPipeline> pipes() 
+    std::vector<cPipeline> pipes()
     {
         return myPipePoints;
     }
@@ -132,17 +133,17 @@ public:
     {
         return myWallPoints;
     }
-    const cxy& getWallDoorPoint( int index ) const
+    const cxy &getWallDoorPoint(int index) const
     {
-        if( index < 0 || index > myWallPoints.size()-1)
+        if (index < 0 || index > myWallPoints.size() - 1)
             throw std::runtime_error("getWallDoorPoint");
-        return myWallPoints[ index ];
+        return myWallPoints[index];
     }
-    int getWallDoorIndex( const cxy& p ) const
+    int getWallDoorIndex(const cxy &p) const
     {
         auto it = std::find(
-            myWallPoints.begin(),myWallPoints.end(), p        );
-        if( it == myWallPoints.end())
+            myWallPoints.begin(), myWallPoints.end(), p);
+        if (it == myWallPoints.end())
             return -1;
         return it - myWallPoints.begin();
     }
@@ -150,8 +151,6 @@ public:
     {
         return myDoorPoints;
     }
-
-
 
     /// @brief which side of the room are two points on
     /// @param p1
@@ -186,6 +185,15 @@ public:
 
     eCorner isConcave(int &index) const;
 
+    bool getConcave(int &index, eCorner &corner) const
+    {
+        if (myConcaveIndex < 0)
+            return false;
+        index = myConcaveIndex;
+        corner = myConcaveCorner;
+        return true;
+    }
+
     /// @brief find wall segment on a margin
     /// @param m margin
     /// @return segment start and end
@@ -193,9 +201,8 @@ public:
     std::pair<cxy, cxy> find(eMargin m) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
-    
-    void pipeConvex();
 
+    void pipeConvex();
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
@@ -215,13 +222,13 @@ public:
 
     void pipefurnaceRoom();
 
-    void add( const cPipeline& pipeline)
+    void add(const cPipeline &pipeline)
     {
-        myPipePoints.push_back( pipeline );
+        myPipePoints.push_back(pipeline);
     }
 
     void addSubroomPipes(
-        cRoom& subroom );
+        cRoom &subroom);
 
     /// @brief layout pipes in every room of the house
 
@@ -303,7 +310,7 @@ public:
     static void clear();
 
     /// @brief clear pipes from house
-    
+
     static void clearHousePipes();
 
     /// @brief get next corner type
@@ -325,7 +332,6 @@ public:
 
 private:
     void boundingRectangle();
-
 };
 
 /// @brief Room corners ( no doors ) as a closed polygon
@@ -346,11 +352,11 @@ public:
     int index(int wp) const;
 
     /// wallpoint index from corner index
-    int wpIndex( int c )
+    int wpIndex(int c)
     {
-        if( 0 > c || c > myIndices.size()-1)
+        if (0 > c || c > myIndices.size() - 1)
             return -1;
-        return myIndices[ c ];
+        return myIndices[c];
     }
 };
 
@@ -360,13 +366,7 @@ bool unitTest();
 
 /// @brief Split concave room into two convex rooms
 /// @param[in] ConcaveRoom to be split
-/// @return rooms 
+/// @return rooms
 
- std::pair<cRoom, cRoom> concaveSplit(
+std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom);
-
-
-
-
-
-
