@@ -93,8 +93,10 @@ class cRoom
     cxy myDoorCenter;
     double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
     int myConcaveIndex;
+    eCorner myConcaveCorner;
 
     std::vector<cPipeline> myPipePoints;
+ 
 
 public:
     cRoom(

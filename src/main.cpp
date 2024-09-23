@@ -25,10 +25,10 @@ double angle(
     for (int i = 1; i < poly.size() - 2; i++)
     {
         a = cxy::clockwise(poly[i - 1], poly[i], poly[i + 1]) / 3.142;
-        //std::cout << a << " ";
+        // std::cout << a << " ";
     }
 
-    //std::cout << "\n";
+    // std::cout << "\n";
     return a;
 }
 
@@ -218,7 +218,8 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
 
 void connectSpiralSpiral(
     cRoom &subroom,
-    const cxy &concavePoint)
+    const cxy &concavePoint,
+    eCorner concaveCorner)
 {
 
     if (subroom.doorCount())
@@ -234,16 +235,37 @@ void connectSpiralSpiral(
 
     // connect to the nearest point of the other subroom spiral
     cxy doorSpiralHot = concavePoint;
-    doorSpiralHot.x -= cRoom::seperation();
-    doorSpiralHot.y += cRoom::seperation();
-    cxy doorSpiralRet;
-    doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
-    doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
+    cxy doorSpiralRet = concavePoint;
+    switch (concaveCorner)
+    {
+    case eCorner::tr_cav:
+        doorSpiralHot.x -= cRoom::seperation();
+        doorSpiralHot.y += cRoom::seperation();
+        doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
+        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
+        break;
+
+    case eCorner::tl_cav:
+        doorSpiralHot.x += cRoom::seperation();
+        doorSpiralHot.y += cRoom::seperation();
+        doorSpiralRet.x = doorSpiralHot.x + cRoom::seperation() / 2;
+        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
+        break;
+
+    case eCorner::br_cav:
+        doorSpiralHot.x -= cRoom::seperation();
+        doorSpiralHot.y -= cRoom::seperation();
+        doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
+        doorSpiralRet.y = doorSpiralHot.y - cRoom::seperation() / 2;
+
+        break;
+    }
 
     // add connecting pipeline to subroom
     cPipeline plhot(
         cPipeline::ePipe::hot,
         {doorSpiralHot, noDoorStartHot});
+    //{doorSpiralHot, cxy(0, 0)});
     subroom.add(plhot);
     cPipeline plret(
         cPipeline::ePipe::ret,
@@ -523,10 +545,10 @@ void insertDoor(
     }
 }
 
- std::pair<cRoom, cRoom> concaveSplit(
+std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom)
 {
-     std::pair<cRoom, cRoom> ret;
+    std::pair<cRoom, cRoom> ret;
     std::pair<cxy, cxy> oppositeWall, newWall;
     int concaveIndex, firstOppositeIndex;
     std::vector<cxy> subRoom1Wall, subRoom2Wall;
@@ -661,6 +683,44 @@ void insertDoor(
 
         break;
 
+    case eCorner::br_cav:
+        oppositeWall = oppositeFind(
+            firstOppositeIndex,
+            noDoors,
+            eMargin::top);
+        newWall = std::make_pair(
+            concavePoint,
+            cxy(concavePoint.x, INT_MAX));
+        cxy::isIntersection(
+            newWall.second,
+            newWall.first, newWall.second,
+            oppositeWall.first, oppositeWall.second);
+        for (int ip = 0; ip < noDoors.size() - 1; ip++)
+        {
+            subRoom1Wall.push_back(noDoors[ip]);
+            if (noDoors[ip] == oppositeWall.first)
+            {
+                subRoom1Wall.push_back(newWall.second);
+
+                while (true)
+                {
+                    ip++; // skip wall points to be cut off by extra wall
+                    if (noDoors[ip] == newWall.first)
+                        break;
+                }
+            }
+        }
+        subRoom2Wall.push_back( newWall.second);
+        for (
+            int ip = ConcaveRoom.getWallDoorIndex(oppositeWall.second);
+            ip <= ConcaveRoom.getWallDoorIndex(newWall.first);
+            ip++)
+        {
+            subRoom2Wall.push_back(ConcaveRoom.getWallDoorPoint(ip));
+        }
+
+        break;
+
     default:
         throw std::runtime_error(
             "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8");
@@ -703,7 +763,7 @@ cRoom::cRoom(
 
     angle(myWallPoints);
 
-    isConcave(myConcaveIndex);
+    myConcaveCorner = isConcave(myConcaveIndex);
 }
 
 void cRoom::add(
@@ -1058,21 +1118,22 @@ void cRoom::pipefurnaceRoom()
 }
 void cRoom::pipe()
 {
-    if( myConcaveIndex >= 0 )
+    if (myConcaveIndex >= 0)
         concavePipe(myConcaveIndex);
     else
         pipeConvex();
 }
 
 void cRoom::addSubroomPipes(
-    cRoom &subroom )
+    cRoom &subroom)
 {
     // layout pipes in subroom
     subroom.pipeConvex();
 
     connectSpiralSpiral(
         subroom,
-        myWallPoints[myConcaveIndex]);
+        myWallPoints[myConcaveIndex],
+        myConcaveCorner);
 
     // add subroom pipes to this room
     for (auto &l : subroom.myPipePoints)
@@ -1099,7 +1160,7 @@ void cRoom::pipeConvex()
     if (!myDoorPoints.size())
     {
         // room has no doors
-        
+
         startCornerIndex = 0;
     }
     else
