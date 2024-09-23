@@ -253,11 +253,10 @@ void connectSpiralSpiral(
         break;
 
     case eCorner::br_cav:
-        doorSpiralHot.x -= cRoom::seperation();
+        doorSpiralHot.x += cRoom::seperation();
         doorSpiralHot.y -= cRoom::seperation();
-        doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
+        doorSpiralRet.x = doorSpiralHot.x + cRoom::seperation() / 2;
         doorSpiralRet.y = doorSpiralHot.y - cRoom::seperation() / 2;
-
         break;
     }
 
