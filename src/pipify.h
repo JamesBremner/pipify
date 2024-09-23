@@ -48,7 +48,7 @@ public:
     cPipeline()
     : myType( ePipe::none)
     {
-        
+
     }
     void set(ePipe type)
     {
@@ -92,8 +92,11 @@ class cRoom
     std::vector<int> myDoorPoints;                   // indices in myWallPoints of first point of pairs specifying doors
     cxy myDoorCenter;
     double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
+    int myConcaveIndex;
+    eCorner myConcaveCorner;
 
     std::vector<cPipeline> myPipePoints;
+ 
 
 public:
     cRoom(
@@ -190,11 +193,9 @@ public:
     std::pair<cxy, cxy> find(eMargin m) const;
 
     /// @brief layout pipes in a room guaranteed to be convex
-    /// @param joins
-    /// for a doored room, joins is ignored
-    /// for an undoored room ( concave subroom ) the nearest pipe points in doored subroom
+    
+    void pipeConvex();
 
-    void pipeConvex(const std::pair<cxy,cxy>& joins);
 
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
@@ -214,9 +215,13 @@ public:
 
     void pipefurnaceRoom();
 
+    void add( const cPipeline& pipeline)
+    {
+        myPipePoints.push_back( pipeline );
+    }
+
     void addSubroomPipes(
-        cRoom& subroom,
-        std::pair<cxy,cxy>& joinPoint );
+        cRoom& subroom );
 
     /// @brief layout pipes in every room of the house
 
@@ -321,14 +326,6 @@ public:
 private:
     void boundingRectangle();
 
-    // std::vector<cxy> pipeSpiral(
-    //     int startIndex,
-    //     const cxy &startPoint);
-
-    // bool isSpiralComplete(
-    //     std::vector<cxy> &spiral,
-    //     int wallSeperation,
-    //     const cxy &nextbend) const;
 };
 
 /// @brief Room corners ( no doors ) as a closed polygon
@@ -347,23 +344,25 @@ public:
 
     /// corner index from wallpoint index
     int index(int wp) const;
+
+    /// wallpoint index from corner index
+    int wpIndex( int c )
+    {
+        if( 0 > c || c > myIndices.size()-1)
+            return -1;
+        return myIndices[ c ];
+    }
 };
 
 // free functions
 
 bool unitTest();
 
-struct sConcaveSplit
-{
-    std::pair<cRoom, cRoom> rooms;  // doored subroom, doorless subroom
-    std::pair<cxy,cxy> joins;       // hot start, return start
-};
-
 /// @brief Split concave room into two convex rooms
 /// @param[in] ConcaveRoom to be split
-/// @return rooms and join points
+/// @return rooms 
 
-sConcaveSplit concaveSplit(
+ std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom);
 
 

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
 #include <wex.h>
 
@@ -16,6 +17,82 @@ std::vector<cRoom> cRoom::theHouse;
 int cRoom::theSeperation;
 
 int cRoom::thefurnaceRoomIndex;
+
+double angle(
+    std::vector<cxy> poly)
+{
+    double a = cxy::clockwise(poly.back(), poly[0], poly[0]);
+    for (int i = 1; i < poly.size() - 2; i++)
+    {
+        a = cxy::clockwise(poly[i - 1], poly[i], poly[i + 1]) / 3.142;
+        // std::cout << a << " ";
+    }
+
+    // std::cout << "\n";
+    return a;
+}
+
+eCorner concavefind(
+    int &index,
+    const std::vector<cxy> &poly)
+{
+    auto co = cRoom::corner(
+        poly.back(),
+        poly[0],
+        poly[1]);
+    switch (co)
+    {
+    case eCorner::bl_cav:
+    case eCorner::br_cav:
+    case eCorner::tl_cav:
+    case eCorner::tr_cav:
+        index = 0;
+        return co;
+    }
+    for (
+        index = 1;
+        index < poly.size();
+        index++)
+    {
+        cxy p3 = poly[index + 1];
+        if (index == poly.size() - 1)
+        {
+            p3 = poly[0];
+        }
+        co = cRoom::corner(
+            poly[index - 1],
+            poly[index],
+            p3);
+        switch (co)
+        {
+        case eCorner::bl_cav:
+        case eCorner::br_cav:
+        case eCorner::tl_cav:
+        case eCorner::tr_cav:
+            return co;
+        }
+    }
+
+    // the poly is convex
+    return eCorner::error;
+}
+
+std::pair<cxy, cxy> oppositeFind(
+    int &firstIndex,
+    const std::vector<cxy> poly,
+    eMargin m)
+{
+    for (int ip = 0; ip < poly.size(); ip++)
+    {
+        if (cRoom::side(poly[ip], poly[ip + 1]) == m)
+        {
+            firstIndex = ip;
+            return std::make_pair(poly[ip], poly[ip + 1]);
+        }
+    }
+    throw std::runtime_error(
+        "cRoom::find error");
+}
 
 /// @brief Locate the center of the first door
 /// @param wall walls and doors of the room
@@ -69,14 +146,14 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
     {
     case eMargin::top:
         spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x, doorCenter.y+sep);
+        spiral.emplace_back(doorCenter.x, doorCenter.y + sep);
         spiral.emplace_back(
             polygon[ip2].x - sep,
             polygon[ip2].y + sep);
         spiralReturn.emplace_back(
-            doorCenter.x-sep, doorCenter.y);
+            doorCenter.x - sep, doorCenter.y);
         spiralReturn.emplace_back(
-            doorCenter.x-sep, doorCenter.y+1.5 * sep);
+            doorCenter.x - sep, doorCenter.y + 1.5 * sep);
         spiralReturn.emplace_back(
             polygon[ip2].x - 1.5 * sep,
             polygon[ip2].y + 1.5 * sep);
@@ -84,14 +161,14 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
 
     case eMargin::right:
         spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x-sep, doorCenter.y);
+        spiral.emplace_back(doorCenter.x - sep, doorCenter.y);
         spiral.emplace_back(
             polygon[ip2].x - sep,
             polygon[ip2].y - sep);
         spiralReturn.emplace_back(
-            doorCenter.x, doorCenter.y-sep);
+            doorCenter.x, doorCenter.y - sep);
         spiralReturn.emplace_back(
-            doorCenter.x - 1.5 * sep, doorCenter.y-sep);
+            doorCenter.x - 1.5 * sep, doorCenter.y - sep);
         spiralReturn.emplace_back(
             polygon[ip2].x - 1.5 * sep,
             polygon[ip2].y - 1.5 * sep);
@@ -114,14 +191,14 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
 
     case eMargin::left:
         spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x+sep, doorCenter.y);
+        spiral.emplace_back(doorCenter.x + sep, doorCenter.y);
         spiral.emplace_back(
             polygon[ip2].x + sep,
             polygon[ip2].y + sep);
         spiralReturn.emplace_back(
-            doorCenter.x, doorCenter.y+sep);
+            doorCenter.x, doorCenter.y + sep);
         spiralReturn.emplace_back(
-            doorCenter.x + 1.5 * sep, doorCenter.y+sep);
+            doorCenter.x + 1.5 * sep, doorCenter.y + sep);
         spiralReturn.emplace_back(
             polygon[ip2].x + 1.5 * sep,
             polygon[ip2].y + 1.5 * sep);
@@ -135,13 +212,69 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
         cPipeline(
             cPipeline::ePipe::ret,
             spiralReturn));
+}
+/// @brief add connectiing pipelines between subrooms
+/// @param subroom
 
+void connectSpiralSpiral(
+    cRoom &subroom,
+    const cxy &concavePoint,
+    eCorner concaveCorner)
+{
+
+    if (subroom.doorCount())
+    {
+        // The connection between the subrooms must be done once
+        // best done for the subroom without a door
+        return;
+    }
+
+    // connect to the subroom spiral start
+    cxy noDoorStartHot = subroom.pipes()[0].myLine[0];
+    cxy noDoorStartRet = subroom.pipes()[1].myLine[0];
+
+    // connect to the nearest point of the other subroom spiral
+    cxy doorSpiralHot = concavePoint;
+    cxy doorSpiralRet = concavePoint;
+    switch (concaveCorner)
+    {
+    case eCorner::tr_cav:
+        doorSpiralHot.x -= cRoom::seperation();
+        doorSpiralHot.y += cRoom::seperation();
+        doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
+        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
+        break;
+
+    case eCorner::tl_cav:
+        doorSpiralHot.x += cRoom::seperation();
+        doorSpiralHot.y += cRoom::seperation();
+        doorSpiralRet.x = doorSpiralHot.x + cRoom::seperation() / 2;
+        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
+        break;
+
+    case eCorner::br_cav:
+        doorSpiralHot.x += cRoom::seperation();
+        doorSpiralHot.y -= cRoom::seperation();
+        doorSpiralRet.x = doorSpiralHot.x + cRoom::seperation() / 2;
+        doorSpiralRet.y = doorSpiralHot.y - cRoom::seperation() / 2;
+        break;
+    }
+
+    // add connecting pipeline to subroom
+    cPipeline plhot(
+        cPipeline::ePipe::hot,
+        {doorSpiralHot, noDoorStartHot});
+    //{doorSpiralHot, cxy(0, 0)});
+    subroom.add(plhot);
+    cPipeline plret(
+        cPipeline::ePipe::ret,
+        {doorSpiralRet, noDoorStartRet});
+    subroom.add(plret);
 }
 
 /// @brief Make the pipe spiral in a convex room
 /// @param polygon room with doors removed ( closed polygon )
 /// @param startCornerIndex polygon index where spiral wraps around
-/// @param startPoints spiral starting points
 /// @param doorCenter
 /// @param maxDim rom maximum dimension extent
 /// @return spiral pipeline
@@ -149,7 +282,6 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
 std::pair<cPipeline, cPipeline> spiralMaker(
     const std::vector<cxy> &polygon,
     int startCornerIndex,
-    const std::pair<cxy, cxy> &xxx,
     const cxy &doorCenter,
     double maxDim)
 {
@@ -302,6 +434,7 @@ std::pair<cRoom, cRoom> concaveMakeSubRooms(
     const std::vector<int> &subRoom2Doors)
 {
     // check subroom sanity
+
     if ((!subRoom1Doors.size()) && (!subRoom2Doors.size()))
         throw std::runtime_error(
             "concaveSplit no door in either subroom of " + ConcaveRoom.name());
@@ -320,10 +453,34 @@ std::pair<cRoom, cRoom> concaveMakeSubRooms(
             throw std::runtime_error(
                 "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
     }
-    else if (subRoom2Wall.size() != 4)
-        throw std::runtime_error(
-            "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+    else
+    {
+        if (subRoom1Doors.size())
+        {
+            if (subRoom1Wall.size() != 6)
+                throw std::runtime_error(
+                    "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+        }
+        else
+        {
+            if (subRoom1Wall.size() != 4)
+                throw std::runtime_error(
+                    "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+        }
 
+        if (subRoom2Doors.size())
+        {
+            if (subRoom2Wall.size() != 6)
+                throw std::runtime_error(
+                    "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+        }
+        else
+        {
+            if (subRoom2Wall.size() != 4)
+                throw std::runtime_error(
+                    "concaveSplit bad wallpoint count in subroom of " + ConcaveRoom.name());
+        }
+    }
     // construct the subrooms
     // return them with the one with a door first
 
@@ -353,26 +510,68 @@ std::pair<cRoom, cRoom> concaveMakeSubRooms(
 
     return ret;
 }
+void insertDoor(
+    std::vector<cxy> &subRoom1Wall, std::vector<int> &subRoom1Doors,
+    std::vector<cxy> &subRoom2Wall, std::vector<int> &subRoom2Doors,
+    const std::vector<cxy> &roomWall,
+    int doorIndex)
+{
+    for (int isb = 0; isb < subRoom1Wall.size() - 1; isb++)
+    {
+        if (roomWall[doorIndex].dis2toline(
+                subRoom1Wall[isb], subRoom1Wall[isb + 1]) < 0.5)
+        {
+            // insert door into subroom wall
+            subRoom1Wall.insert(
+                subRoom1Wall.begin() + isb + 1,
+                roomWall.begin() + doorIndex,
+                roomWall.begin() + doorIndex + 2);
+            subRoom1Doors.push_back(isb + 1);
+            return;
+        }
 
-sConcaveSplit concaveSplit(
+        if (roomWall[doorIndex].dis2toline(
+                subRoom2Wall[isb], subRoom2Wall[isb + 1]) < 0.5)
+        {
+            // insert door into subroom wall
+            subRoom2Wall.insert(
+                subRoom2Wall.begin() + isb + 1,
+                roomWall.begin() + doorIndex,
+                roomWall.begin() + doorIndex + 2);
+            subRoom2Doors.push_back(isb + 1);
+            return;
+        }
+    }
+}
+
+std::pair<cRoom, cRoom> concaveSplit(
     const cRoom &ConcaveRoom)
 {
-    sConcaveSplit ret;
-    cxy joinPoint;
+    std::pair<cRoom, cRoom> ret;
     std::pair<cxy, cxy> oppositeWall, newWall;
-    int concaveIndex;
+    int concaveIndex, firstOppositeIndex;
     std::vector<cxy> subRoom1Wall, subRoom2Wall;
     std::vector<int> subRoom1Doors, subRoom2Doors;
 
     auto wps = ConcaveRoom.getWallPoints();
     auto dps = ConcaveRoom.getDoorPoints();
+    cCorners C(ConcaveRoom);
+    auto noDoors = C.getCorners();
+    eCorner corner = concavefind(
+        concaveIndex,
+        noDoors);
+    if (concaveIndex < 0)
+        throw std::runtime_error(
+            "concaveSplit error");
+    cxy concavePoint = noDoors[concaveIndex];
 
-    eCorner corner = ConcaveRoom.isConcave(concaveIndex);
-    cxy concavePoint = ConcaveRoom.getWallDoorPoint(concaveIndex);
     switch (corner)
     {
     case eCorner::tr_cav:
-        oppositeWall = ConcaveRoom.find(eMargin::bottom);
+        oppositeWall = oppositeFind(
+            firstOppositeIndex,
+            noDoors,
+            eMargin::bottom);
         newWall = std::make_pair(
             concavePoint,
             cxy(concavePoint.x, INT_MAX));
@@ -381,26 +580,21 @@ sConcaveSplit concaveSplit(
             newWall.first, newWall.second,
             oppositeWall.first, oppositeWall.second);
 
-        for (int ip = 0; ip < wps.size(); ip++)
+        for (int ip = 0; ip < noDoors.size() - 1; ip++)
         {
-            if (!(wps[ip] == newWall.first))
+            if (!(noDoors[ip] == newWall.first))
             {
-                subRoom1Wall.push_back(wps[ip]);
-                if (ip == dps[0])
-                {
-                    subRoom1Doors.push_back(subRoom1Wall.size() - 1);
-                    std::cout << "tr_cav subroom1 door " << subRoom1Wall.back().x << " " << subRoom1Wall.back().y << "\n";
-                }
+                subRoom1Wall.push_back(noDoors[ip]);
             }
             else
             {
                 while (true)
                 {
                     ip++; // skip wall points to be cut off by extra wall
-                    if (ip >= wps.size())
+                    if (ip >= noDoors.size())
                         throw std::runtime_error("pipeConcave subroom error");
 
-                    if (wps[ip] == oppositeWall.first)
+                    if (noDoors[ip] == oppositeWall.first)
                     {
                         subRoom1Wall.push_back(newWall.second);
                         break; // continue for remaining wall points
@@ -411,26 +605,21 @@ sConcaveSplit concaveSplit(
 
         for (int ip = concaveIndex; true; ip++)
         {
-            subRoom2Wall.push_back(wps[ip]);
+            subRoom2Wall.push_back(noDoors[ip]);
 
-            if (wps[ip] == oppositeWall.first)
+            if (noDoors[ip] == oppositeWall.first)
             {
                 subRoom2Wall.push_back(newWall.second);
                 break;
             }
         }
-
-        joinPoint = wps[concaveIndex];
-        joinPoint.x -= cRoom::seperation();
-        joinPoint.y += cRoom::seperation();
-        ret.joins.first = joinPoint;
-        joinPoint.y -= cRoom::seperation() / 2;
-        ret.joins.second = joinPoint;
-
         break;
 
     case eCorner::tl_cav:
-        oppositeWall = ConcaveRoom.find(eMargin::bottom);
+        oppositeWall = oppositeFind(
+            firstOppositeIndex,
+            noDoors,
+            eMargin::bottom);
         newWall = std::make_pair(
             concavePoint,
             cxy(concavePoint.x, INT_MAX));
@@ -439,26 +628,38 @@ sConcaveSplit concaveSplit(
             newWall.first, newWall.second,
             oppositeWall.first, oppositeWall.second);
 
-        for (int ip = 0; ip < wps.size(); ip++)
+        for (int ip = 0; ip < noDoors.size(); ip++)
         {
-            subRoom1Wall.push_back(wps[ip]);
-            if (ip == dps[0])
-            {
-                subRoom1Doors.push_back(subRoom1Wall.size() - 1);
-            }
+            subRoom1Wall.push_back(noDoors[ip]);
 
-            if (wps[ip] == oppositeWall.first) // !!!!!!
+            // std::cout << " split wp " << ip
+            //           << " -> " << subRoom1Wall.size() - 1
+            //           << " loc "
+            //           << noDoors[ip].x << " " << noDoors[ip].y << "\n";
+
+            if (ip == firstOppositeIndex) // !!!!!!
             {
 
                 while (true)
                 {
+                    // std::cout << "skip " << ip
+                    //           << " " << noDoors[ip].x
+                    //           << " " << noDoors[ip].y << "\n";
+
                     ip++; // skip wall points to be cut off by extra wall
-                    if (ip >= wps.size())
+
+                    if (ip >= noDoors.size())
                         throw std::runtime_error("pipeConcave subroom error");
 
                     if (ip == concaveIndex)
                     {
                         subRoom1Wall.push_back(newWall.second);
+
+                        // std::cout << " split wp " << ip
+                        //           << " -> " << subRoom1Wall.size() - 1
+                        //           << " loc "
+                        //           << noDoors[ip].x << " " << noDoors[ip].y << "\n";
+
                         break;
                     }
                 }
@@ -470,24 +671,52 @@ sConcaveSplit concaveSplit(
         subRoom2Wall.clear();
         subRoom2Wall.push_back(newWall.first);
         subRoom2Wall.push_back(newWall.second);
+
         for (
             int ip = ConcaveRoom.getWallDoorIndex(oppositeWall.second);
-            ip < concaveIndex;
+            ip < ConcaveRoom.getWallDoorIndex(newWall.first);
             ip++)
         {
             subRoom2Wall.push_back(ConcaveRoom.getWallDoorPoint(ip));
-            if (ip == dps[0])
-            {
-                subRoom2Doors.push_back(subRoom2Wall.size() - 1);
-            }
         }
 
-        joinPoint = newWall.second;
-        joinPoint.x += cRoom::seperation();
-        joinPoint.y -= cRoom::seperation();
-        ret.joins.first = joinPoint;
-        joinPoint.y -= cRoom::seperation() / 2;
-        ret.joins.second = joinPoint;
+        break;
+
+    case eCorner::br_cav:
+        oppositeWall = oppositeFind(
+            firstOppositeIndex,
+            noDoors,
+            eMargin::top);
+        newWall = std::make_pair(
+            concavePoint,
+            cxy(concavePoint.x, INT_MAX));
+        cxy::isIntersection(
+            newWall.second,
+            newWall.first, newWall.second,
+            oppositeWall.first, oppositeWall.second);
+        for (int ip = 0; ip < noDoors.size() - 1; ip++)
+        {
+            subRoom1Wall.push_back(noDoors[ip]);
+            if (noDoors[ip] == oppositeWall.first)
+            {
+                subRoom1Wall.push_back(newWall.second);
+
+                while (true)
+                {
+                    ip++; // skip wall points to be cut off by extra wall
+                    if (noDoors[ip] == newWall.first)
+                        break;
+                }
+            }
+        }
+        subRoom2Wall.push_back( newWall.second);
+        for (
+            int ip = ConcaveRoom.getWallDoorIndex(oppositeWall.second);
+            ip <= ConcaveRoom.getWallDoorIndex(newWall.first);
+            ip++)
+        {
+            subRoom2Wall.push_back(ConcaveRoom.getWallDoorPoint(ip));
+        }
 
         break;
 
@@ -496,7 +725,14 @@ sConcaveSplit concaveSplit(
             "Concave room pipe layout NYI.  see https://github.com/JamesBremner/pipify/issues/8");
     }
 
-    ret.rooms = concaveMakeSubRooms(
+    // insert door into subroom wall
+    insertDoor(
+        subRoom1Wall, subRoom1Doors,
+        subRoom2Wall, subRoom2Doors,
+        wps, dps[0]);
+
+    // create subrooms from walls
+    ret = concaveMakeSubRooms(
         ConcaveRoom,
         subRoom1Wall, subRoom1Doors,
         subRoom2Wall, subRoom2Doors);
@@ -523,6 +759,10 @@ cRoom::cRoom(
         myDoorCenter = doorCenter(
             myWallPoints,
             myDoorPoints[0]);
+
+    angle(myWallPoints);
+
+    myConcaveCorner = isConcave(myConcaveIndex);
 }
 
 void cRoom::add(
@@ -656,62 +896,15 @@ bool cRoom::isPipeCrossing(const cxy &p1, const cxy &p2) const
     return false;
 }
 
-std::pair<cxy, cxy> cRoom::find(eMargin m) const
-{
-    for (int ip = 0; ip < myWallPoints.size(); ip++)
-        if (side(myWallPoints[ip], myWallPoints[ip + 1]) == m)
-            return std::make_pair(myWallPoints[ip], myWallPoints[ip + 1]);
-    throw std::runtime_error(
-        "cRoom::find errorrr");
-}
-
 eCorner cRoom::isConcave(int &index) const
 {
-    auto co = corner(
-        myWallPoints.back(),
-        myWallPoints[0],
-        myWallPoints[1]);
-    switch (co)
-    {
-    case eCorner::bl_cav:
-    case eCorner::br_cav:
-    case eCorner::tl_cav:
-    case eCorner::tr_cav:
-        index = 0;
-        return co;
-    }
-    for (
-        index = 1;
-        index < myWallPoints.size();
-        index++)
-    {
-        if (std::find(myDoorPoints.begin(), myDoorPoints.end(), index) != myDoorPoints.end())
-        {
-            // skip doors
-            index++;
-            continue;
-        }
-        cxy p3 = myWallPoints[index + 1];
-        if (index == myWallPoints.size() - 1)
-        {
-            p3 = myWallPoints[0];
-        }
-        co = corner(
-            myWallPoints[index - 1],
-            myWallPoints[index],
-            p3);
-        switch (co)
-        {
-        case eCorner::bl_cav:
-        case eCorner::br_cav:
-        case eCorner::tl_cav:
-        case eCorner::tr_cav:
-            return co;
-        }
-    }
-
-    // the room is convex
-    return eCorner::error;
+    cCorners corners(*this);
+    auto ret = concavefind(index, corners.getCorners());
+    if (ret == eCorner::error)
+        index = -1;
+    else
+        index = corners.wpIndex(index);
+    return ret;
 }
 
 cxy cRoom::pipeDoor()
@@ -924,29 +1117,22 @@ void cRoom::pipefurnaceRoom()
 }
 void cRoom::pipe()
 {
-    int concaveIndex;
-    switch (isConcave(concaveIndex))
-    {
-    case eCorner::bl_cav:
-    case eCorner::br_cav:
-    case eCorner::tl_cav:
-    case eCorner::tr_cav:
-        concavePipe(concaveIndex);
-        break;
-
-    case eCorner::error:
-    default:
-        pipeConvex(std::make_pair(cxy(), cxy()));
-        break;
-    }
+    if (myConcaveIndex >= 0)
+        concavePipe(myConcaveIndex);
+    else
+        pipeConvex();
 }
 
 void cRoom::addSubroomPipes(
-    cRoom &subroom,
-    std::pair<cxy, cxy> &joins)
+    cRoom &subroom)
 {
     // layout pipes in subroom
-    subroom.pipeConvex(joins);
+    subroom.pipeConvex();
+
+    connectSpiralSpiral(
+        subroom,
+        myWallPoints[myConcaveIndex],
+        myConcaveCorner);
 
     // add subroom pipes to this room
     for (auto &l : subroom.myPipePoints)
@@ -959,49 +1145,42 @@ void cRoom::concavePipe(int concaveIndex)
 
     auto subrooms = concaveSplit(*this);
 
-    addSubroomPipes(subrooms.rooms.first, subrooms.joins);
-    addSubroomPipes(subrooms.rooms.second, subrooms.joins);
-
-    return;
+    addSubroomPipes(subrooms.first);
+    addSubroomPipes(subrooms.second);
 }
 
-void cRoom::pipeConvex(
-    const std::pair<cxy, cxy> &joins)
+void cRoom::pipeConvex()
 {
-    std::cout << "=>pipeConvex " << myName << " "
-              << joins.first.x << " " << joins.first.y << " "
-              << joins.second.x << " " << joins.second.y << "\n";
+    // std::cout << "=>pipeConvex " << myName << "\n";
 
     cCorners corners(*this);
 
     int startCornerIndex;
-    // cxy startPoint;
     if (!myDoorPoints.size())
     {
         // room has no doors
-        // needs to connect the spiral to the nearest pipe in the subroom that does have a door
-        // assume that other subroom has already been calculated
+
         startCornerIndex = 0;
-        // startPoint = joins.first;
     }
     else
     {
+        // connect spiral start to pipes in door to furnace
+
         startCornerIndex = myDoorPoints[0] - 1;
         if (startCornerIndex == -1)
             startCornerIndex = myWallPoints.size() - 1;
 
-        auto spiral = connectSpiralDoor(
+        auto cnx = connectSpiralDoor(
             corners.getCorners(),
             startCornerIndex,
             myDoorCenter);
-        myPipePoints.push_back(spiral.first);
-        myPipePoints.push_back(spiral.second);
+        myPipePoints.push_back(cnx.first);
+        myPipePoints.push_back(cnx.second);
     }
 
     auto spiral = spiralMaker(
         corners.getCorners(),
         startCornerIndex,
-        joins,
         myDoorCenter,
         myMaxDim);
 

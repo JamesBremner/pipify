@@ -5,6 +5,19 @@
 
 bool unitTest()
 {
+
+    cRoom::readfile("../dat/L.txt");
+    auto subRooms = concaveSplit(
+        cRoom::getRooms()[0]);
+    subRooms.second.pipeConvex();
+
+    cRoom::readfile("../dat/L3.txt");
+    subRooms = concaveSplit(
+        cRoom::getRooms()[0]);
+
+        
+    subRooms.second.pipeConvex();
+
     cRoom::readfile("../dat/r1.text");
     auto segs = cRoom::houseWallSegments();
 
@@ -25,19 +38,6 @@ bool unitTest()
         return false;
     if (C.index(3) != 1)
         return false;
-
-     cRoom::readfile("../dat/L.text");
-     cxy jointPoint;
-    // auto subRooms = ConcaveSplit(
-    //     cRoom::getRooms()[0],
-    //     jointPoint );
-    // subRooms.first.pipeConvex();
-    // subRooms.second.pipeConvex();
-
-    cRoom::readfile("../dat/L2.txt");
-    auto subRooms = concaveSplit(
-        cRoom::getRooms()[0]);
-    subRooms.rooms.second.pipeConvex(std::make_pair(cxy(),cxy()));
 
     cxy p1(0, 1);
     cxy p2(0, 0);
