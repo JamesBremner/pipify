@@ -38,13 +38,23 @@ public:
         hot,
         ret,
     };
+    enum class eLine
+    {
+        none,
+        spiral,
+        door,
+        spiral2spiral,
+        ring,
+    };
     ePipe myType;
+    eLine myLineType;
     std::vector<cxy> myLine;
 
     cPipeline(
-        ePipe type,
+        ePipe type, eLine lineType,
         const std::vector<cxy> &bends)
         : myType(type),
+        myLineType( lineType),
           myLine(bends)
     {
     }
@@ -125,6 +135,10 @@ public:
     {
         return myPipePoints;
     }
+
+    const std::vector<cxy>& getSpiralHot() const;
+    const std::vector<cxy>& getSpiralRet() const;
+
     int doorCount() const
     {
         return myDoorPoints.size();

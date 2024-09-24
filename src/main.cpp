@@ -214,70 +214,66 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
     return std::make_pair(
         cPipeline(
             cPipeline::ePipe::hot,
+            cPipeline::eLine::door,
             spiral),
         cPipeline(
             cPipeline::ePipe::ret,
+            cPipeline::eLine::door,
             spiralReturn));
 }
-/// @brief add connectiing pipelines between subrooms
+
+cxy closestOnSpiral(
+    cxy &point,
+    const std::vector<cxy> &spiral)
+{
+    double dmin = INT_MAX;
+    cxy ret;
+    for (int i = 0; i < 5; i++)
+    {
+        cxy vector = spiral[i].vect(spiral[i+1]);
+        for (double f = 0; f < 1.2; f += 0.2)
+        {
+            cxy tst = spiral[i];
+            tst.x += f * vector.x;
+            tst.y += f * vector.y;
+            double d = point.dist2(tst);
+            if (d < dmin)
+            {
+                dmin = d;
+                ret = tst;
+            }
+        }
+    }
+    return ret;
+}
+
+/// @brief add connecting pipelines between subrooms
 /// @param subroom
 
 void connectSpiralSpiral(
-    cRoom& concaveRoom,
-    cRoom &subroom)
+    cRoom &concaveRoom,
+    std::pair<cRoom, cRoom> &subrooms)
 {
+    cxy noDoorStartHot = subrooms.second.getSpiralHot()[0];
+    cxy noDoorStartRet = subrooms.second.getSpiralRet()[0];
 
-    if (subroom.doorCount())
-    {
-        // The connection between the subrooms must be done once
-        // best done for the subroom without a door
-        return;
-    }
-
-    // connect to the subroom spiral start
-    cxy noDoorStartHot = subroom.pipes()[0].myLine[0];
-    cxy noDoorStartRet = subroom.pipes()[1].myLine[0];
-
-    // connect to the nearest point of the other subroom spiral
-    int concaveIndex;
-    eCorner concaveCorner;
-    concaveRoom.getConcave( concaveIndex, concaveCorner);
-    cxy doorSpiralHot = concaveRoom.getWallPoints()[concaveIndex];
-    cxy doorSpiralRet = doorSpiralHot;
-    switch (concaveCorner)
-    {
-    case eCorner::tr_cav:
-        doorSpiralHot.x -= cRoom::seperation();
-        doorSpiralHot.y += cRoom::seperation();
-        doorSpiralRet.x = doorSpiralHot.x - cRoom::seperation() / 2;
-        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
-        break;
-
-    case eCorner::tl_cav:
-        doorSpiralHot.x += cRoom::seperation();
-        doorSpiralHot.y += cRoom::seperation();
-        doorSpiralRet.x = doorSpiralHot.x + cRoom::seperation() / 2;
-        doorSpiralRet.y = doorSpiralHot.y + cRoom::seperation() / 2;
-        break;
-
-    case eCorner::br_cav:
-        doorSpiralHot.x += cRoom::seperation();
-        doorSpiralHot.y -= cRoom::seperation();
-        doorSpiralRet.x = doorSpiralHot.x + cRoom::seperation() / 2;
-        doorSpiralRet.y = doorSpiralHot.y - cRoom::seperation() / 2;
-        break;
-    }
-
-    // add connecting pipeline to subroom
+    cxy doorSpiralHot = closestOnSpiral(
+        noDoorStartHot,
+        subrooms.first.getSpiralHot());
     cPipeline plhot(
         cPipeline::ePipe::hot,
+        cPipeline::eLine::spiral2spiral,
         {doorSpiralHot, noDoorStartHot});
-    //{doorSpiralHot, cxy(0, 0)});
-    subroom.add(plhot);
+    concaveRoom.add(plhot);
+
+    cxy doorSpiralRet = closestOnSpiral(
+        noDoorStartRet,
+        subrooms.first.getSpiralRet());
     cPipeline plret(
         cPipeline::ePipe::ret,
+        cPipeline::eLine::spiral2spiral,
         {doorSpiralRet, noDoorStartRet});
-    subroom.add(plret);
+    concaveRoom.add(plret);
 }
 
 /// @brief Make the pipe spiral in a convex room
@@ -431,9 +427,11 @@ std::pair<cPipeline, cPipeline> spiralMaker(
     return std::make_pair(
         cPipeline(
             cPipeline::ePipe::hot,
+            cPipeline::eLine::spiral,
             spiral),
         cPipeline(
             cPipeline::ePipe::ret,
+            cPipeline::eLine::spiral,
             spiralReturn));
 }
 
@@ -836,6 +834,29 @@ std::vector<std::vector<cxy>> cRoom::wallSegments()
     return ret;
 }
 
+const std::vector<cxy> &cRoom::getSpiralHot() const
+{
+    for (auto &p : myPipePoints)
+    {
+        if (p.myType == cPipeline::ePipe::hot &&
+            p.myLineType == cPipeline::eLine::spiral)
+            return p.myLine;
+    }
+    throw std::runtime_error(
+        "getSpiralHot not found");
+}
+const std::vector<cxy> &cRoom::getSpiralRet() const
+{
+    for (auto &p : myPipePoints)
+    {
+        if (p.myType == cPipeline::ePipe::ret &&
+            p.myLineType == cPipeline::eLine::spiral)
+            return p.myLine;
+    }
+    throw std::runtime_error(
+        "getSpiralHot not found");
+}
+
 eMargin cRoom::side(const cxy &p1, const cxy &p2)
 {
     if (p1.x == p2.x)
@@ -970,6 +991,7 @@ cxy cRoom::pipeDoor()
     pipeSegment.push_back(p3);
     myPipePoints.emplace_back(
         cPipeline::ePipe::hot,
+        cPipeline::eLine::door,
         pipeSegment);
 
     return p2;
@@ -1079,9 +1101,11 @@ void cRoom::pipefurnaceRoom()
     }
     myPipePoints.emplace_back(
         cPipeline::ePipe::hot,
+        cPipeline::eLine::ring,
         ring);
     myPipePoints.emplace_back(
         cPipeline::ePipe::ret,
+        cPipeline::eLine::ring,
         ring_ret);
 
     // door pipes
@@ -1110,6 +1134,7 @@ void cRoom::pipefurnaceRoom()
         std::vector<cxy> pipe = {dc, p2};
         myPipePoints.emplace_back(
             cPipeline::ePipe::hot,
+            cPipeline::eLine::door,
             pipe);
 
         // door return
@@ -1136,6 +1161,7 @@ void cRoom::pipefurnaceRoom()
         }
         myPipePoints.emplace_back(
             cPipeline::ePipe::ret,
+            cPipeline::eLine::door,
             pipe);
     }
 }
@@ -1161,17 +1187,13 @@ void cRoom::pipeConcave()
     // connect pipes between subrooms
     connectSpiralSpiral(
         *this,
-        subrooms.first);
-    connectSpiralSpiral(
-        *this,
-        subrooms.second);
+        subrooms);
 
     // add subroom pipes to this room
     for (auto &l : subrooms.first.pipes())
         add(l);
     for (auto &l : subrooms.second.pipes())
         add(l);
-
 }
 
 void cRoom::pipeConvex()
