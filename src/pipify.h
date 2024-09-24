@@ -207,7 +207,7 @@ public:
     /// @brief layout pipes in a concave room
     /// @param concaveIndex index of wall point at concave corner
 
-    void concavePipe(int concaveIndex);
+    void pipeConcave();
 
     /// @brief layout pipes in a doorway
     /// @return location of hot pipe in doorway
@@ -226,9 +226,6 @@ public:
     {
         myPipePoints.push_back(pipeline);
     }
-
-    void addSubroomPipes(
-        cRoom &subroom);
 
     /// @brief layout pipes in every room of the house
 

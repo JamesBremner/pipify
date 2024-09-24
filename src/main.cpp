@@ -223,9 +223,8 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
 /// @param subroom
 
 void connectSpiralSpiral(
-    cRoom &subroom,
-    const cxy &concavePoint,
-    eCorner concaveCorner)
+    cRoom& concaveRoom,
+    cRoom &subroom)
 {
 
     if (subroom.doorCount())
@@ -240,8 +239,11 @@ void connectSpiralSpiral(
     cxy noDoorStartRet = subroom.pipes()[1].myLine[0];
 
     // connect to the nearest point of the other subroom spiral
-    cxy doorSpiralHot = concavePoint;
-    cxy doorSpiralRet = concavePoint;
+    int concaveIndex;
+    eCorner concaveCorner;
+    concaveRoom.getConcave( concaveIndex, concaveCorner);
+    cxy doorSpiralHot = concaveRoom.getWallPoints()[concaveIndex];
+    cxy doorSpiralRet = doorSpiralHot;
     switch (concaveCorner)
     {
     case eCorner::tr_cav:
@@ -715,7 +717,7 @@ std::pair<cRoom, cRoom> concaveSplit(
                             subRoom1Wall.push_back(noDoors[ip]);
                         break;
                     }
-                 }
+                }
             }
         }
     }
@@ -1140,35 +1142,36 @@ void cRoom::pipefurnaceRoom()
 void cRoom::pipe()
 {
     if (myConcaveIndex >= 0)
-        concavePipe(myConcaveIndex);
+        pipeConcave();
     else
         pipeConvex();
 }
 
-void cRoom::addSubroomPipes(
-    cRoom &subroom)
-{
-    // layout pipes in subroom
-    subroom.pipeConvex();
-
-    connectSpiralSpiral(
-        subroom,
-        myWallPoints[myConcaveIndex],
-        myConcaveCorner);
-
-    // add subroom pipes to this room
-    for (auto &l : subroom.myPipePoints)
-        myPipePoints.push_back(l);
-}
-
-void cRoom::concavePipe(int concaveIndex)
+void cRoom::pipeConcave()
 {
     // split concave room into 2 convex rooms
 
     auto subrooms = concaveSplit(*this);
 
-    addSubroomPipes(subrooms.first);
-    addSubroomPipes(subrooms.second);
+    // layout pipes in subrooms
+
+    subrooms.first.pipeConvex();
+    subrooms.second.pipeConvex();
+
+    // connect pipes between subrooms
+    connectSpiralSpiral(
+        *this,
+        subrooms.first);
+    connectSpiralSpiral(
+        *this,
+        subrooms.second);
+
+    // add subroom pipes to this room
+    for (auto &l : subrooms.first.pipes())
+        add(l);
+    for (auto &l : subrooms.second.pipes())
+        add(l);
+
 }
 
 void cRoom::pipeConvex()
