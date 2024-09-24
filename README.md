@@ -24,9 +24,10 @@ Shows return pipe in blue.
 ![image](https://github.com/user-attachments/assets/5ef1d03e-c891-4a1e-b6ec-4217baa764ef)
 
 
-## Pipe layout in a L-shaped room
+## Pipe layout in a L-shaped rooms
 
-![image](https://github.com/user-attachments/assets/a8835ac3-ced3-4e80-a3c6-cc75b2459b58)
+![image](https://github.com/user-attachments/assets/ec500c35-3e6a-4b9d-9588-2f0e8abe298b)
+
 
 ## GUI
 
