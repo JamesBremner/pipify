@@ -54,7 +54,7 @@ public:
         ePipe type, eLine lineType,
         const std::vector<cxy> &bends)
         : myType(type),
-        myLineType( lineType),
+          myLineType(lineType),
           myLine(bends)
     {
     }
@@ -136,8 +136,8 @@ public:
         return myPipePoints;
     }
 
-    const std::vector<cxy>& getSpiralHot() const;
-    const std::vector<cxy>& getSpiralRet() const;
+    const std::vector<cxy> &getSpiralHot() const;
+    const std::vector<cxy> &getSpiralRet() const;
 
     int doorCount() const
     {
@@ -166,14 +166,20 @@ public:
         return myDoorPoints;
     }
 
-    /// @brief which side of the room are two points on
-    /// @param p1
-    /// @param p2
-    /// @return margin
-    ///
-    /// Assumes room polygon defined clockwise
+    /// @brief get point at center of doorway
+    /// @return
+    /// assumes one door only, to the furnace room,
+    /// and this is not the furnace room
 
-    static eMargin side(const cxy &p1, const cxy &p2);
+    cxy getDoorCenter() const
+    {
+        return myDoorCenter;
+    }
+
+    double getMaxDim() const
+    {
+        return myMaxDim;
+    }
 
     /// @brief identify corner type
     /// @param p1
@@ -198,6 +204,11 @@ public:
     /// @return concave corner type, or eCorner::error if convex
 
     eCorner isConcave(int &index) const;
+
+    bool isConcave() const
+    {
+        return (myConcaveIndex >= 0);
+    }
 
     bool getConcave(int &index, eCorner &corner) const
     {
@@ -230,7 +241,7 @@ public:
 
     /// @brief layout pipes in room
 
-    void pipe();
+    // void pipe();
 
     /// @brief layout pipes in furnace room
 
@@ -243,7 +254,7 @@ public:
 
     /// @brief layout pipes in every room of the house
 
-    static void pipeHouse();
+    // static void pipeHouse();
 
     /// @brief set the separation between pipes
     /// @param seperation
@@ -371,9 +382,24 @@ public:
     }
 };
 
+class cPipeLayer
+{
+public:
+    cPipeLayer(std::vector<cRoom> &house);
+
+private:
+    std::vector<cRoom> &myHouse;
+
+    void convex(cRoom &room);
+    void concave(cRoom &room);
+    void furnaceRoom(cRoom &room);
+};
+
 // free functions
 
 bool unitTest();
+
+eMargin side(const cxy &p1, const cxy &p2);
 
 /// @brief Split concave room into two convex rooms
 /// @param[in] ConcaveRoom to be split

@@ -32,6 +32,26 @@ double angle(
     return a;
 }
 
+   /// @brief which side of the room are two points on
+    /// @param p1
+    /// @param p2
+    /// @return margin
+    ///
+    /// Assumes room polygon defined clockwise
+
+eMargin side(const cxy &p1, const cxy &p2)
+{
+    if (p1.x == p2.x)
+        if (p1.y < p2.y)
+            return eMargin::right;
+        else
+            return eMargin::left;
+    else if (p1.x < p2.x)
+        return eMargin::top;
+    else
+        return eMargin::bottom;
+}
+
 eCorner concavefind(
     int &index,
     const std::vector<cxy> &poly)
@@ -90,7 +110,7 @@ std::pair<cxy, cxy> marginFind(
 {
     for (int ip = 0; ip < poly.size(); ip++)
     {
-        if (cRoom::side(poly[ip], poly[ip + 1]) == m)
+        if (side(poly[ip], poly[ip + 1]) == m)
         {
             firstIndex = ip;
             return std::make_pair(poly[ip], poly[ip + 1]);
@@ -113,7 +133,7 @@ cxy doorCenter(
     cxy d2 = wall[index + 1];
     double widthHalf = sqrt(d1.dist2(d2)) / 2;
     cxy ret = d1;
-    eMargin m = cRoom::side(d1, d2);
+    eMargin m = side(d1, d2);
     switch (m)
     {
     case eMargin::top:
@@ -146,7 +166,7 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
     if (ip2 == polygon.size())
         ip2 = 0;
 
-    switch (cRoom::side(
+    switch (side(
         polygon[startCornerIndex],
         polygon[ip2]))
     {
@@ -230,7 +250,7 @@ cxy closestOnSpiral(
     cxy ret;
     for (int i = 0; i < 5; i++)
     {
-        cxy vector = spiral[i].vect(spiral[i+1]);
+        cxy vector = spiral[i].vect(spiral[i + 1]);
         for (double f = 0; f < 1.2; f += 0.2)
         {
             cxy tst = spiral[i];
@@ -857,18 +877,6 @@ const std::vector<cxy> &cRoom::getSpiralRet() const
         "getSpiralHot not found");
 }
 
-eMargin cRoom::side(const cxy &p1, const cxy &p2)
-{
-    if (p1.x == p2.x)
-        if (p1.y < p2.y)
-            return eMargin::right;
-        else
-            return eMargin::left;
-    else if (p1.x < p2.x)
-        return eMargin::top;
-    else
-        return eMargin::bottom;
-}
 
 eCorner cRoom::corner(
     const cxy &p1,
@@ -997,41 +1005,41 @@ cxy cRoom::pipeDoor()
     return p2;
 }
 
-void cRoom::pipeHouse()
-{
-    if (!theHouse.size())
-        return;
+// void cRoom::pipeHouse()
+// {
+//     if (!theHouse.size())
+//         return;
 
-    for (int roomIndex = 0; roomIndex < theHouse.size(); roomIndex++)
-    {
-        try
-        {
-            std::cout << "calculating pipe layout for room "
-                      << theHouse[roomIndex].myName << "\n";
+//     for (int roomIndex = 0; roomIndex < theHouse.size(); roomIndex++)
+//     {
+//         try
+//         {
+//             std::cout << "calculating pipe layout for room "
+//                       << theHouse[roomIndex].myName << "\n";
 
-            theHouse[roomIndex].clearPipes();
+//             theHouse[roomIndex].clearPipes();
 
-            if (roomIndex == thefurnaceRoomIndex)
-            {
-                theHouse[roomIndex].pipefurnaceRoom();
-            }
-            else
-            {
-                theHouse[roomIndex].pipe();
-            }
-        }
-        catch (std::runtime_error &e)
-        {
-            /// report exception
-            std::cout << "!!! Exception !!!" << e.what() << "\n\n";
+//             if (roomIndex == thefurnaceRoomIndex)
+//             {
+//                 theHouse[roomIndex].pipefurnaceRoom();
+//             }
+//             else
+//             {
+//                 theHouse[roomIndex].pipe();
+//             }
+//         }
+//         catch (std::runtime_error &e)
+//         {
+//             /// report exception
+//             std::cout << "!!! Exception !!!" << e.what() << "\n\n";
 
-            /// clear any pipes from this room
-            theHouse[roomIndex].clearPipes();
+//             /// clear any pipes from this room
+//             theHouse[roomIndex].clearPipes();
 
-            // continue trying other rooms
-        }
-    }
-}
+//             // continue trying other rooms
+//         }
+//     }
+// }
 
 void cRoom::pipefurnaceRoom()
 {
@@ -1165,75 +1173,76 @@ void cRoom::pipefurnaceRoom()
             pipe);
     }
 }
-void cRoom::pipe()
-{
-    if (myConcaveIndex >= 0)
-        pipeConcave();
-    else
-        pipeConvex();
-}
 
-void cRoom::pipeConcave()
-{
-    // split concave room into 2 convex rooms
+// void cRoom::pipe()
+// {
+//     if (myConcaveIndex >= 0)
+//         pipeConcave();
+//     else
+//         pipeConvex();
+// }
 
-    auto subrooms = concaveSplit(*this);
+// void cRoom::pipeConcave()
+// {
+//     // split concave room into 2 convex rooms
 
-    // layout pipes in subrooms
+//     auto subrooms = concaveSplit(*this);
 
-    subrooms.first.pipeConvex();
-    subrooms.second.pipeConvex();
+//     // layout pipes in subrooms
 
-    // connect pipes between subrooms
-    connectSpiralSpiral(
-        *this,
-        subrooms);
+//     subrooms.first.pipeConvex();
+//     subrooms.second.pipeConvex();
 
-    // add subroom pipes to this room
-    for (auto &l : subrooms.first.pipes())
-        add(l);
-    for (auto &l : subrooms.second.pipes())
-        add(l);
-}
+//     // connect pipes between subrooms
+//     connectSpiralSpiral(
+//         *this,
+//         subrooms);
 
-void cRoom::pipeConvex()
-{
-    // std::cout << "=>pipeConvex " << myName << "\n";
+//     // add subroom pipes to this room
+//     for (auto &l : subrooms.first.pipes())
+//         add(l);
+//     for (auto &l : subrooms.second.pipes())
+//         add(l);
+// }
 
-    cCorners corners(*this);
+// void cRoom::pipeConvex()
+// {
+//     // std::cout << "=>pipeConvex " << myName << "\n";
 
-    int startCornerIndex;
-    if (!myDoorPoints.size())
-    {
-        // room has no doors
+//     cCorners corners(*this);
 
-        startCornerIndex = 0;
-    }
-    else
-    {
-        // connect spiral start to pipes in door to furnace
+//     int startCornerIndex;
+//     if (!myDoorPoints.size())
+//     {
+//         // room has no doors
 
-        startCornerIndex = myDoorPoints[0] - 1;
-        if (startCornerIndex == -1)
-            startCornerIndex = myWallPoints.size() - 1;
+//         startCornerIndex = 0;
+//     }
+//     else
+//     {
+//         // connect spiral start to pipes in door to furnace
 
-        auto cnx = connectSpiralDoor(
-            corners.getCorners(),
-            startCornerIndex,
-            myDoorCenter);
-        myPipePoints.push_back(cnx.first);
-        myPipePoints.push_back(cnx.second);
-    }
+//         startCornerIndex = myDoorPoints[0] - 1;
+//         if (startCornerIndex == -1)
+//             startCornerIndex = myWallPoints.size() - 1;
 
-    auto spiral = spiralMaker(
-        corners.getCorners(),
-        startCornerIndex,
-        myDoorCenter,
-        myMaxDim);
+//         auto cnx = connectSpiralDoor(
+//             corners.getCorners(),
+//             startCornerIndex,
+//             myDoorCenter);
+//         myPipePoints.push_back(cnx.first);
+//         myPipePoints.push_back(cnx.second);
+//     }
 
-    myPipePoints.push_back(spiral.first);
-    myPipePoints.push_back(spiral.second);
-}
+//     auto spiral = spiralMaker(
+//         corners.getCorners(),
+//         startCornerIndex,
+//         myDoorCenter,
+//         myMaxDim);
+
+//     myPipePoints.push_back(spiral.first);
+//     myPipePoints.push_back(spiral.second);
+// }
 
 void cRoom::boundingRectangle()
 {
@@ -1424,6 +1433,239 @@ int cCorners::index(int wp) const
         return -1;
     return it - myIndices.begin();
 }
+
+cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
+    : myHouse(house)
+{
+    for (int roomIndex = 0; roomIndex < myHouse.size(); roomIndex++)
+    {
+        try
+        {
+            std::cout << "calculating pipe layout for room "
+                      << myHouse[roomIndex].name() << "\n";
+
+            myHouse[roomIndex].clearPipes();
+
+            if (roomIndex == cRoom::furnaceRoomIndex())
+            {
+                myHouse[roomIndex].pipefurnaceRoom();
+            }
+            else if (myHouse[roomIndex].isConcave())
+            {
+                concave(myHouse[roomIndex]);
+            }
+            else
+            {
+                convex(myHouse[roomIndex] );
+            }
+        }
+        catch (std::runtime_error &e)
+        {
+            /// report exception
+            std::cout << "!!! Exception !!!" << e.what() << "\n\n";
+
+            /// clear any pipes from this room
+            myHouse[roomIndex].clearPipes();
+
+            // continue trying other rooms
+        }
+    }
+}
+
+void cPipeLayer::convex(cRoom &room)
+{
+    // std::cout << "=>pipeConvex " << myName << "\n";
+
+    cCorners corners(room);
+
+    int startCornerIndex;
+    if (!room.doorCount())
+    {
+        // room has no doors
+
+        startCornerIndex = 0;
+    }
+    else
+    {
+        // connect spiral start to pipes in door to furnace
+
+        startCornerIndex = room.getDoorPoints()[0] - 1;
+        if (startCornerIndex == -1)
+            startCornerIndex = room.getWallPoints().size() - 1;
+
+        auto cnx = connectSpiralDoor(
+            corners.getCorners(),
+            startCornerIndex,
+            room.getDoorCenter());
+        room.add(cnx.first);
+        room.add(cnx.second);
+    }
+
+    auto spiral = spiralMaker(
+        corners.getCorners(),
+        startCornerIndex,
+        room.getDoorCenter(),
+        room.getMaxDim());
+    room.add(spiral.first);
+    room.add(spiral.second);
+}
+
+void cPipeLayer::concave( cRoom& room)
+{
+    // split concave room into 2 convex rooms
+
+    auto subrooms = concaveSplit(room);
+
+    // layout pipes in subrooms
+
+    convex( subrooms.first );
+    convex( subrooms.second );
+
+    // connect pipes between subrooms
+    connectSpiralSpiral(
+        room,
+        subrooms);
+
+    // add subroom pipes to this room
+    for (auto &l : subrooms.first.pipes())
+        room.add(l);
+    for (auto &l : subrooms.second.pipes())
+        room.add(l);
+}
+
+void cPipeLayer::furnaceRoom(cRoom& room )
+{
+    int sepret = cRoom::seperation() / 2;
+
+    // ring pipe
+
+    // construct closed polygon without doors
+    cCorners corners(room);
+    std::vector<cxy> noDoors = corners.getCorners();
+
+    std::vector<cxy> ring, ring_ret;
+    for (int icorner = 0; icorner < noDoors.size(); icorner++)
+    {
+        cxy p1, bend, p2;
+        if (icorner == 0)
+            p1 = noDoors[noDoors.size() - 2];
+        else
+            p1 = noDoors[icorner - 1];
+
+        bend = noDoors[icorner];
+
+        if (icorner == noDoors.size() - 1)
+            p2 = noDoors[1];
+        else
+            p2 = noDoors[icorner + 1];
+
+        cxy bendReturn;
+
+        switch (room.corner(p1, bend, p2))
+        {
+        case eCorner::tl_vex:
+            bend = cxy(
+                bend.x + cRoom::seperation(),
+                bend.y + cRoom::seperation());
+            bendReturn = cxy(
+                bend.x + sepret,
+                bend.y + sepret);
+            break;
+        case eCorner::tr_vex:
+            bend = cxy(
+                bend.x - cRoom::seperation(),
+                bend.y + cRoom::seperation());
+            bendReturn = cxy(
+                bend.x - sepret,
+                bend.y + sepret);
+            break;
+        case eCorner::br_vex:
+            bend = cxy(
+                bend.x - cRoom::seperation(),
+                bend.y - cRoom::seperation());
+            bendReturn = cxy(
+                bend.x - sepret,
+                bend.y - sepret);
+            break;
+        case eCorner::bl_vex:
+            bend = cxy(
+                bend.x + cRoom::seperation(),
+                bend.y - cRoom::seperation());
+            bendReturn = cxy(
+                bend.x + sepret,
+                bend.y - sepret);
+            break;
+        }
+        ring.push_back(bend);
+        ring_ret.push_back(bendReturn);
+    }
+    room.add(cPipeline(
+        cPipeline::ePipe::hot,
+        cPipeline::eLine::ring,
+        ring));
+    room.add(cPipeline(
+        cPipeline::ePipe::ret,
+        cPipeline::eLine::ring,
+        ring_ret));
+
+    // door pipes
+
+    for (int doorIndex : room.getDoorPoints())
+    {
+        cxy dc = room.getDoorCenter();
+        cxy p2 = dc;
+        eMargin m = side(dc, room.getWallPoints()[doorIndex + 1]);
+        switch (m)
+        {
+        case eMargin::top:
+            p2.y = dc.y + cRoom::seperation();
+            break;
+        case eMargin::bottom:
+            p2.y = dc.y - cRoom::seperation();
+            break;
+        case eMargin::left:
+            p2.x = dc.x + cRoom::seperation();
+            break;
+        case eMargin::right:
+            p2.x = dc.x - cRoom::seperation();
+            break;
+        }
+
+        std::vector<cxy> pipe = {dc, p2};
+        room.add(cPipeline(
+            cPipeline::ePipe::hot,
+            cPipeline::eLine::door,
+            pipe));
+
+        // door return
+
+        pipe.clear();
+        switch (m)
+        {
+        case eMargin::top:
+            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y + 1.5 * cRoom::seperation());
+            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y);
+            break;
+        case eMargin::left:
+            pipe.emplace_back(dc.x + 1.5 * cRoom::seperation(), dc.y - cRoom::seperation());
+            pipe.emplace_back(dc.x, dc.y - cRoom::seperation());
+            break;
+        case eMargin::bottom:
+            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y - 1.5 * cRoom::seperation());
+            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y);
+            break;
+        case eMargin::right:
+            pipe.emplace_back(dc.x - 1.5 * cRoom::seperation(), dc.y + cRoom::seperation());
+            pipe.emplace_back(dc.x, dc.y + cRoom::seperation());
+            break;
+        }
+        room.add(cPipeline(
+            cPipeline::ePipe::ret,
+            cPipeline::eLine::door,
+            pipe));
+    }
+}
+
 
 main()
 {

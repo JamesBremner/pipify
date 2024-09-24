@@ -40,7 +40,7 @@ void cGUI::menus()
               {
                   try
                   {
-                      cRoom::pipeHouse();
+                      cPipeLayer(cRoom::getRooms());
                   }
                   catch (std::runtime_error &e)
                   {
@@ -131,7 +131,7 @@ void doorReturnLineSegment(
     int x1, int y1, int x2, int y2,
     int sep)
 {
-    switch (cRoom::side(cxy(x1, y1), cxy(x2, y2)))
+    switch (side(cxy(x1, y1), cxy(x2, y2)))
     {
     case eMargin::top:
         rx1 = x1 - sep;
