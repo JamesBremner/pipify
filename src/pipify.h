@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <iostream>
 #include "cxy.h"
 
 enum class eCorner
