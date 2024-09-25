@@ -1,82 +1,99 @@
 #include "pipify.h"
 
+/// @brief Connect pipe spiral with the furnace pipes in the doorway
+/// @param polygon room walls without doors
+/// @param startCornerIndex
+/// @param doorCenter
+/// @return hot and return pipes making the connection
+
+eMargin cPolygon::margin(int index) const
+{
+    if (0 > index || index > myVertices.size() - 1)
+        throw std::runtime_error(
+            "cPolygon::margin bad parameter");
+    cxy p1 = myVertices[index];
+    cxy p2;
+    if (index == myVertices.size() - 1)
+        p2 = myVertices[0]; // wrap around for open polygon
+    else
+        p2 = myVertices[index + 1];
+    return margin(p1, p2);
+}
 
 std::pair<cPipeline, cPipeline> connectSpiralDoor(
-    const std::vector<cxy> &polygon,
+    const cPolygon &polygon,
     int startCornerIndex,
     const cxy &doorCenter)
 {
-    std::vector<cxy> spiral, spiralReturn;
+    std::vector<cxy> hotPipe, retPipe;
 
+    // separation between hot and return pipes
     int sep = cRoom::seperation();
-    int sepret = sep / 2;
+    int sep2 = sep / 2;
 
-    int ip2 = startCornerIndex + 1;
-    if (ip2 == polygon.size())
-        ip2 = 0;
+    // room corner on other side of door
+    cxy vertex2 = polygon.vertex(startCornerIndex + 1);
 
-    switch (side(
-        polygon[startCornerIndex],
-        polygon[ip2]))
+    switch (polygon.margin(startCornerIndex))
     {
     case eMargin::top:
-        spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x, doorCenter.y + sep);
-        spiral.emplace_back(
-            polygon[ip2].x - sep,
-            polygon[ip2].y + sep);
-        spiralReturn.emplace_back(
-            doorCenter.x - sep, doorCenter.y);
-        spiralReturn.emplace_back(
-            doorCenter.x - sep, doorCenter.y + 1.5 * sep);
-        spiralReturn.emplace_back(
-            polygon[ip2].x - 1.5 * sep,
-            polygon[ip2].y + 1.5 * sep);
+        hotPipe.push_back(doorCenter);
+        hotPipe.emplace_back(doorCenter.x, doorCenter.y + sep);
+        hotPipe.emplace_back(
+            vertex2.x - sep,
+            vertex2.y + sep);
+        retPipe.emplace_back(
+            doorCenter.x - sep2, doorCenter.y);
+        retPipe.emplace_back(
+            doorCenter.x - sep2, doorCenter.y + 1.5 * sep);
+        retPipe.emplace_back(
+            vertex2.x - 1.5 * sep,
+            vertex2.y + 1.5 * sep);
         break;
 
     case eMargin::right:
-        spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x - sep, doorCenter.y);
-        spiral.emplace_back(
-            polygon[ip2].x - sep,
-            polygon[ip2].y - sep);
-        spiralReturn.emplace_back(
-            doorCenter.x, doorCenter.y - sep);
-        spiralReturn.emplace_back(
-            doorCenter.x - 1.5 * sep, doorCenter.y - sep);
-        spiralReturn.emplace_back(
-            polygon[ip2].x - 1.5 * sep,
-            polygon[ip2].y - 1.5 * sep);
+        hotPipe.push_back(doorCenter);
+        hotPipe.emplace_back(doorCenter.x - sep, doorCenter.y);
+        hotPipe.emplace_back(
+            vertex2.x - sep,
+            vertex2.y - sep);
+        retPipe.emplace_back(
+            doorCenter.x, doorCenter.y - sep2);
+        retPipe.emplace_back(
+            doorCenter.x - 1.5 * sep, doorCenter.y - sep2);
+        retPipe.emplace_back(
+            vertex2.x - 1.5 * sep,
+            vertex2.y - 1.5 * sep);
         break;
 
     case eMargin::bottom:
-        spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x, doorCenter.y - sep);
-        spiral.emplace_back(
-            polygon[ip2].x + sep,
-            polygon[ip2].y - sep);
-        spiralReturn.emplace_back(
-            doorCenter.x - sep, doorCenter.y);
-        spiralReturn.emplace_back(
-            doorCenter.x - sep, doorCenter.y - 1.5 * sep);
-        spiralReturn.emplace_back(
-            polygon[ip2].x + 1.5 * sep,
-            polygon[ip2].y - 1.5 * sep);
+        hotPipe.push_back(doorCenter);
+        hotPipe.emplace_back(doorCenter.x, doorCenter.y - sep);
+        hotPipe.emplace_back(
+            vertex2.x + sep,
+            vertex2.y - sep);
+        retPipe.emplace_back(
+            doorCenter.x - sep2, doorCenter.y);
+        retPipe.emplace_back(
+            doorCenter.x - sep2, doorCenter.y - 1.5 * sep);
+        retPipe.emplace_back(
+            vertex2.x + 1.5 * sep,
+            vertex2.y - 1.5 * sep);
         break;
 
     case eMargin::left:
-        spiral.push_back(doorCenter);
-        spiral.emplace_back(doorCenter.x + sep, doorCenter.y);
-        spiral.emplace_back(
-            polygon[ip2].x + sep,
-            polygon[ip2].y + sep);
-        spiralReturn.emplace_back(
-            doorCenter.x, doorCenter.y + sep);
-        spiralReturn.emplace_back(
-            doorCenter.x + 1.5 * sep, doorCenter.y + sep);
-        spiralReturn.emplace_back(
-            polygon[ip2].x + 1.5 * sep,
-            polygon[ip2].y + 1.5 * sep);
+        hotPipe.push_back(doorCenter);
+        hotPipe.emplace_back(doorCenter.x + sep, doorCenter.y);
+        hotPipe.emplace_back(
+            vertex2.x + sep,
+            vertex2.y + sep);
+        retPipe.emplace_back(
+            doorCenter.x, doorCenter.y + sep2);
+        retPipe.emplace_back(
+            doorCenter.x + 1.5 * sep, doorCenter.y + sep2);
+        retPipe.emplace_back(
+            vertex2.x + 1.5 * sep,
+            vertex2.y + 1.5 * sep);
         break;
     }
 
@@ -84,13 +101,12 @@ std::pair<cPipeline, cPipeline> connectSpiralDoor(
         cPipeline(
             cPipeline::ePipe::hot,
             cPipeline::eLine::door,
-            spiral),
+            hotPipe),
         cPipeline(
             cPipeline::ePipe::ret,
             cPipeline::eLine::door,
-            spiralReturn));
+            retPipe));
 }
-
 
 cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
     : myHouse(house)
@@ -114,7 +130,7 @@ cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
             }
             else
             {
-                convex(myHouse[roomIndex] );
+                convex(myHouse[roomIndex]);
             }
         }
         catch (std::runtime_error &e)
@@ -129,8 +145,6 @@ cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
         }
     }
 }
-
-
 
 /// @brief Make the pipe spiral in a convex room
 /// @param polygon room with doors removed ( closed polygon )
@@ -154,40 +168,10 @@ std::pair<cPipeline, cPipeline> spiralMaker(
     // spiral.push_back(startPoints.first);
     // spiralReturn.push_back(startPoints.second);
 
-    // starting side
+    // starting margin
     int ip2 = startCornerIndex + 1;
     if (ip2 == polygon.size())
         ip2 = 0;
-
-    // switch (cRoom::side(
-    //     polygon[startCornerIndex],
-    //     polygon[ip2]))
-    // {
-    // case eMargin::top:
-    //     spiralReturn.emplace_back(
-    //         doorCenter.x - sep, doorCenter.y);
-    //     spiralReturn.emplace_back(
-    //         startPoint.x - sep, startPoint.y + sepret);
-    //     break;
-    // case eMargin::right:
-    //     spiralReturn.emplace_back(
-    //         doorCenter.x, doorCenter.y - sep);
-    //     spiralReturn.emplace_back(
-    //         startPoint.x - sepret, startPoint.y - sep);
-    //     break;
-    // case eMargin::bottom:
-    //     spiralReturn.emplace_back(
-    //         doorCenter.x - sep, doorCenter.y);
-    //     spiralReturn.emplace_back(
-    //         startPoint.x - sep, startPoint.y - sepret);
-    //     break;
-    // case eMargin::left:
-    //     spiralReturn.emplace_back(
-    //         doorCenter.x, doorCenter.y + sep);
-    //     spiralReturn.emplace_back(
-    //         startPoint.x + sepret, startPoint.y + sep);
-    //     break;
-    // }
 
     int wallsep = sep;
     for (int bendIndex = ip2; true; bendIndex++)
@@ -315,7 +299,6 @@ cxy closestOnSpiral(
     return ret;
 }
 
-
 /// @brief add connecting pipelines between subrooms
 /// @param subroom
 
@@ -383,8 +366,7 @@ void cPipeLayer::convex(cRoom &room)
     room.add(spiral.second);
 }
 
-
-void cPipeLayer::concave( cRoom& room)
+void cPipeLayer::concave(cRoom &room)
 {
     // split concave room into 2 convex rooms
 
@@ -392,8 +374,8 @@ void cPipeLayer::concave( cRoom& room)
 
     // layout pipes in subrooms
 
-    convex( subrooms.first );
-    convex( subrooms.second );
+    convex(subrooms.first);
+    convex(subrooms.second);
 
     // connect pipes between subrooms
     connectSpiralSpiral(
@@ -407,7 +389,7 @@ void cPipeLayer::concave( cRoom& room)
         room.add(l);
 }
 
-void cPipeLayer::furnaceRoom(cRoom& room )
+void cPipeLayer::furnaceRoom(cRoom &room)
 {
     int sepret = cRoom::seperation() / 2;
 
@@ -486,9 +468,13 @@ void cPipeLayer::furnaceRoom(cRoom& room )
 
     for (int doorIndex : room.getDoorPoints())
     {
-        cxy dc = room.getDoorCenter();
+        cxy d1 = room.getWallPoints()[doorIndex];
+        cxy d2 = room.getWallPoints()[doorIndex + 1];
+        cxy dc(
+            d1.x + (d2.x - d1.x) / 2,
+            d1.y + (d2.y - d1.y) / 2);
         cxy p2 = dc;
-        eMargin m = side(dc, room.getWallPoints()[doorIndex + 1]);
+        eMargin m = cPolygon::margin(d1, d2);
         switch (m)
         {
         case eMargin::top:
@@ -517,20 +503,20 @@ void cPipeLayer::furnaceRoom(cRoom& room )
         switch (m)
         {
         case eMargin::top:
-            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y + 1.5 * cRoom::seperation());
-            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y);
+            pipe.emplace_back(dc.x - sepret, dc.y + 1.5 * cRoom::seperation());
+            pipe.emplace_back(dc.x - sepret, dc.y);
             break;
         case eMargin::left:
-            pipe.emplace_back(dc.x + 1.5 * cRoom::seperation(), dc.y - cRoom::seperation());
-            pipe.emplace_back(dc.x, dc.y - cRoom::seperation());
+            pipe.emplace_back(dc.x + 1.5 * cRoom::seperation(), dc.y - sepret);
+            pipe.emplace_back(dc.x, dc.y - sepret);
             break;
         case eMargin::bottom:
-            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y - 1.5 * cRoom::seperation());
-            pipe.emplace_back(dc.x - cRoom::seperation(), dc.y);
+            pipe.emplace_back(dc.x - sepret, dc.y - 1.5 * cRoom::seperation());
+            pipe.emplace_back(dc.x - sepret, dc.y);
             break;
         case eMargin::right:
-            pipe.emplace_back(dc.x - 1.5 * cRoom::seperation(), dc.y + cRoom::seperation());
-            pipe.emplace_back(dc.x, dc.y + cRoom::seperation());
+            pipe.emplace_back(dc.x - 1.5 * cRoom::seperation(), dc.y + sepret);
+            pipe.emplace_back(dc.x, dc.y + sepret);
             break;
         }
         room.add(cPipeline(
@@ -539,4 +525,3 @@ void cPipeLayer::furnaceRoom(cRoom& room )
             pipe));
     }
 }
-

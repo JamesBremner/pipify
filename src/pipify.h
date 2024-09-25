@@ -30,6 +30,37 @@ enum class eMargin
 
 typedef std::pair<cxy, cxy> wall_t;
 
+class cPolygon
+{
+public:
+    /// @brief CTOR
+    /// @param vertices
+
+    cPolygon(const std::vector<cxy> &vertices);
+
+    eMargin margin(int index) const;
+
+    cxy vertex(int index) const
+    {
+        if (0 > index || index > myVertices.size() - 1)
+            throw std::runtime_error(
+                "cPolygon::margin bad parameter");
+        return myVertices[index];
+    }
+
+    /// @brief which margin of the room are two points on
+    /// @param p1
+    /// @param p2
+    /// @return margin
+    ///
+    /// Assumes room polygon defined clockwise
+
+    static eMargin margin(const cxy &p1, const cxy &p2);
+
+private:
+    std::vector<cxy> myVertices;
+};
+
 class cPipeline
 {
 public:
@@ -264,6 +295,10 @@ public:
     {
         theSeperation = seperation;
     }
+
+    /// @brief seperation between hot pipes, user units
+    /// @return
+
     static int seperation()
     {
         return theSeperation;
@@ -399,8 +434,6 @@ private:
 // free functions
 
 bool unitTest();
-
-eMargin side(const cxy &p1, const cxy &p2);
 
 /// @brief Split concave room into two convex rooms
 /// @param[in] ConcaveRoom to be split

@@ -32,24 +32,26 @@ double angle(
     return a;
 }
 
-   /// @brief which side of the room are two points on
-    /// @param p1
-    /// @param p2
-    /// @return margin
-    ///
-    /// Assumes room polygon defined clockwise
+    cPolygon::cPolygon(const std::vector<cxy> &vertices)
+        : myVertices(vertices)
+    {
+    }
 
-eMargin side(const cxy &p1, const cxy &p2)
+eMargin cPolygon::margin(const cxy &p1, const cxy &p2)
 {
     if (p1.x == p2.x)
         if (p1.y < p2.y)
             return eMargin::right;
         else
             return eMargin::left;
-    else if (p1.x < p2.x)
-        return eMargin::top;
+    else if (p1.y == p2.y)
+        if (p1.x < p2.x)
+            return eMargin::top;
+        else
+            return eMargin::bottom;
     else
-        return eMargin::bottom;
+        throw std::runtime_error(
+            "margin bad parameter");
 }
 
 eCorner concavefind(
@@ -110,7 +112,7 @@ std::pair<cxy, cxy> marginFind(
 {
     for (int ip = 0; ip < poly.size(); ip++)
     {
-        if (side(poly[ip], poly[ip + 1]) == m)
+        if (cPolygon::margin(poly[ip], poly[ip + 1]) == m)
         {
             firstIndex = ip;
             return std::make_pair(poly[ip], poly[ip + 1]);
@@ -133,7 +135,7 @@ cxy doorCenter(
     cxy d2 = wall[index + 1];
     double widthHalf = sqrt(d1.dist2(d2)) / 2;
     cxy ret = d1;
-    eMargin m = side(d1, d2);
+    eMargin m = cPolygon::margin(d1, d2);
     switch (m)
     {
     case eMargin::top:
@@ -574,14 +576,13 @@ const std::vector<cxy> &cRoom::getSpiralRet() const
         "getSpiralHot not found");
 }
 
-
 eCorner cRoom::corner(
     const cxy &p1,
     const cxy &p2,
     const cxy &p3)
 {
-    eMargin m1 = side(p1, p2);
-    eMargin m2 = side(p2, p3);
+    eMargin m1 = cPolygon::margin(p1, p2);
+    eMargin m2 = cPolygon::margin(p2, p3);
     if (m1 == eMargin::left && m2 == eMargin::top)
         return eCorner::tl_vex;
     if (m1 == eMargin::top && m2 == eMargin::left)
@@ -662,8 +663,8 @@ cxy cRoom::pipeDoor()
     cxy d1 = myWallPoints[myDoorPoints[0]];
     cxy d2 = myWallPoints[myDoorPoints[0] + 1];
 
-    // switch on side where door is placed
-    switch (side(d1, d2))
+    // switch on margin where door is placed
+    switch (cPolygon::margin(d1, d2))
     {
     case eMargin::top:
         p2.x = p1.x;
@@ -891,7 +892,6 @@ int cCorners::index(int wp) const
         return -1;
     return it - myIndices.begin();
 }
-
 
 main()
 {

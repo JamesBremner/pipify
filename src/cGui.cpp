@@ -131,7 +131,7 @@ void doorReturnLineSegment(
     int x1, int y1, int x2, int y2,
     int sep)
 {
-    switch (side(cxy(x1, y1), cxy(x2, y2)))
+    switch (cPolygon::margin(cxy(x1, y1), cxy(x2, y2)))
     {
     case eMargin::top:
         rx1 = x1 - sep;
