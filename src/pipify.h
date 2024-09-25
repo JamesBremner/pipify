@@ -38,15 +38,25 @@ public:
 
     cPolygon(const std::vector<cxy> &vertices);
 
+    /// @brief get margin of side
+    /// @param index of 1st vertex on side 
+    /// @return top,left,bottom or right
+
     eMargin margin(int index) const;
 
-    cxy vertex(int index) const
-    {
-        if (0 > index || index > myVertices.size() - 1)
-            throw std::runtime_error(
-                "cPolygon::margin bad parameter");
-        return myVertices[index];
-    }
+    /// @brief get vertex location
+    /// @param index 
+    /// @return 
+
+    cxy vertex(int index) const;
+
+    wall_t side(int index ) const;
+
+    /// @brief true if clockwise
+    /// @return
+    /// https://stackoverflow.com/a/1165943/16582
+
+    bool isClockwise() const;
 
     /// @brief which margin of the room are two points on
     /// @param p1

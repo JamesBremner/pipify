@@ -6,20 +6,6 @@
 /// @param doorCenter
 /// @return hot and return pipes making the connection
 
-eMargin cPolygon::margin(int index) const
-{
-    if (0 > index || index > myVertices.size() - 1)
-        throw std::runtime_error(
-            "cPolygon::margin bad parameter");
-    cxy p1 = myVertices[index];
-    cxy p2;
-    if (index == myVertices.size() - 1)
-        p2 = myVertices[0]; // wrap around for open polygon
-    else
-        p2 = myVertices[index + 1];
-    return margin(p1, p2);
-}
-
 std::pair<cPipeline, cPipeline> connectSpiralDoor(
     const cPolygon &polygon,
     int startCornerIndex,

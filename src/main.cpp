@@ -32,10 +32,51 @@ double angle(
     return a;
 }
 
-    cPolygon::cPolygon(const std::vector<cxy> &vertices)
-        : myVertices(vertices)
-    {
-    }
+cPolygon::cPolygon(const std::vector<cxy> &vertices)
+    : myVertices(vertices)
+{
+    // ensure polygon is open
+    if (myVertices[0] == myVertices.back())
+        myVertices.erase(myVertices.end() - 1);
+
+    // ensure polygon is at least a triangle
+    if (myVertices.size() < 3)
+        throw std::runtime_error(
+            " too few vertices in polygon");
+
+    // ensure clockwise
+    if( ! isClockwise() )
+        throw std::runtime_error(
+            "polygon not clockwise"        );
+}
+
+eMargin cPolygon::margin(int index) const
+{
+    auto s = side( index );
+    return margin(s.first,s.second);
+}
+
+wall_t cPolygon::side( int index ) const
+{
+    if (0 > index || index > myVertices.size() - 1)
+        throw std::runtime_error(
+            "cPolygon::margin bad parameter");
+    cxy p1 = myVertices[index];
+    cxy p2;
+    if (index == myVertices.size() - 1)
+        p2 = myVertices[0]; // wrap around for open polygon
+    else
+        p2 = myVertices[index + 1];
+    return std::make_pair( p1,p2);
+}
+
+cxy cPolygon::vertex(int index) const
+{
+    if (0 > index || index > myVertices.size() - 1)
+        throw std::runtime_error(
+            "cPolygon::margin bad parameter");
+    return myVertices[index];
+}
 
 eMargin cPolygon::margin(const cxy &p1, const cxy &p2)
 {
@@ -52,6 +93,27 @@ eMargin cPolygon::margin(const cxy &p1, const cxy &p2)
     else
         throw std::runtime_error(
             "margin bad parameter");
+}
+
+bool cPolygon::isClockwise() const
+{
+    double sum = 0;
+    for( int i = 0; i < myVertices.size(); i++ )
+    {
+        auto s = side(i);
+
+        //  (x2 − x1)(y2 + y1)
+        sum += ( s.second.x - s.first.x ) *
+            (s.second.y + s.first.y);
+    }
+
+    /* a -ve sum means polygon is clockwise
+    This is the reverse of the stackoverflow example
+    because using the windows standard co-ords
+    where y is 0 at the top of the screen
+    and y increases as it goes down the screen
+    */
+    return ( sum < 0 );
 }
 
 eCorner concavefind(

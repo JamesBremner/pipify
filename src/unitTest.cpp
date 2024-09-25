@@ -9,14 +9,31 @@ bool unitTest()
     cRoom::readfile("../dat/L.txt");
     auto subRooms = concaveSplit(
         cRoom::getRooms()[0]);
-    //subRooms.second.pipeConvex();
+    // subRooms.second.pipeConvex();
 
     cRoom::readfile("../dat/L3.txt");
     subRooms = concaveSplit(
         cRoom::getRooms()[0]);
 
-        
-    //subRooms.second.pipeConvex();
+    // test polygon clockwise test
+
+    cPolygon poly1({cxy(5, 0), cxy(6, 4), cxy(4, 5), cxy(1, 5), cxy(1, 0)});
+
+    cPolygon poly({cxy(0, 0), cxy(10, 0), cxy(10, 10), cxy(0, 10)});
+
+    bool OK = false;
+    try
+    {
+        cPolygon polybad({cxy(0, 0), cxy(0, 10), cxy(10, 10), cxy(10, 0)});
+    }
+    catch (std::runtime_error &e)
+    {
+        OK = true;
+    }
+    if (!OK)
+        return false;
+
+    // subRooms.second.pipeConvex();
 
     cRoom::readfile("../dat/r1.text");
     auto segs = cRoom::houseWallSegments();
