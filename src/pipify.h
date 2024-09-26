@@ -30,6 +30,12 @@ enum class eMargin
 
 typedef std::pair<cxy, cxy> wall_t;
 
+struct sConfig
+{
+    int separation;
+    bool loop;
+};
+
 class cBoundingRectangle {
   public:
    double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
@@ -155,7 +161,7 @@ class cRoom
 {
 
     static std::vector<cRoom> theHouse; // the house composed of rooms
-    static int theSeperation;           // separation between hot pipes, user units
+    static sConfig theConfig;           
     static int thefurnaceRoomIndex;
 
     std::string myName;
@@ -324,7 +330,7 @@ public:
 
     static void set(int seperation)
     {
-        theSeperation = seperation;
+        theConfig.separation = seperation;
     }
 
     /// @brief seperation between hot pipes, user units
@@ -332,7 +338,16 @@ public:
 
     static int seperation()
     {
-        return theSeperation;
+        return theConfig.separation;
+    }
+
+    static void setLoop( bool f = true )
+    {
+        theConfig.loop = f;
+    }
+    static bool loop()
+    {
+        return theConfig.loop;
     }
 
     static int roomCount()

@@ -14,7 +14,7 @@
 
 std::vector<cRoom> cRoom::theHouse;
 
-int cRoom::theSeperation;
+sConfig cRoom::theConfig;
 
 int cRoom::thefurnaceRoomIndex;
 
@@ -561,6 +561,8 @@ cRoom::cRoom(
     //angle(myWallPoints);
 
     myConcaveCorner = isConcave(myConcaveIndex);
+
+    setLoop(false);
 }
 
 void cRoom::add(
@@ -730,27 +732,27 @@ cxy cRoom::pipeDoor()
     {
     case eMargin::top:
         p2.x = p1.x;
-        p2.y = p1.y + theSeperation;
+        p2.y = p1.y + cRoom::seperation();
         p3.x = d2.x;
         p3.y = p2.y;
         break;
     case eMargin::right:
-        p2.x = p1.x - theSeperation;
+        p2.x = p1.x -  cRoom::seperation();
         p2.y = p1.y;
         p3.x = p2.x;
         p3.y = d2.y;
         break;
     case eMargin::bottom:
         p2.x = p1.x;
-        p2.y = p1.y - theSeperation;
-        p3.x = p2.x - theSeperation;
+        p2.y = p1.y - cRoom::seperation();
+        p3.x = p2.x - cRoom::seperation();
         p3.y = p2.y;
         break;
     case eMargin::left:
-        p2.x = p1.x + theSeperation;
+        p2.x = p1.x + cRoom::seperation();
         p2.y = p1.y;
         p3.x = p2.x;
-        p3.y = p2.y - theSeperation;
+        p3.y = p2.y - cRoom::seperation();
         break;
     }
     std::vector<cxy> pipeSegment;

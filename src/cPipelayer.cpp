@@ -110,9 +110,20 @@ cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
             {
                 furnaceRoom(myHouse[roomIndex]);
             }
-            else
+            else if (cRoom::loop())
             {
                 loop(myHouse[roomIndex]);
+            }
+            else
+            {
+                if (myHouse[roomIndex].isConcave())
+                {
+                    concave(myHouse[roomIndex]);
+                }
+                else
+                {
+                    convex(myHouse[roomIndex]);
+                }
             }
         }
         catch (std::runtime_error &e)

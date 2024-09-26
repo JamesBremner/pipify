@@ -64,7 +64,7 @@ void cGUI::menus()
 
     mb.append("Run", mr);
 
-    wex::menu me(fm);
+    static wex::menu me(fm);
     me.append("Pipe Separation",
               [&](const std::string &title)
               {
@@ -82,8 +82,27 @@ void cGUI::menus()
 
                   fm.update();
               });
+    me.append("Spiral layout",
+              [&](const std::string &title)
+              {
+                  cRoom::setLoop(false);
+                  cRoom::clearHousePipes();
+                  me.check(1);
+                  me.check(2, false);
+                  fm.update();
+              });
+    me.append("Loop layout",
+              [&](const std::string &title)
+              {
+                  cRoom::setLoop();
+                  cRoom::clearHousePipes();
+                  me.check(1, false);
+                  me.check(2);
+                  fm.update();
+              });
 
     mb.append("Edit", me);
+    me.check(1);
 }
 
 void cGUI::drawHousePipes(
