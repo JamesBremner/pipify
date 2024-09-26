@@ -110,13 +110,20 @@ cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
             {
                 furnaceRoom(myHouse[roomIndex]);
             }
-            else if (myHouse[roomIndex].isConcave())
+            else if (cRoom::loop())
             {
-                concave(myHouse[roomIndex]);
+                loop(myHouse[roomIndex]);
             }
             else
             {
-                convex(myHouse[roomIndex]);
+                if (myHouse[roomIndex].isConcave())
+                {
+                    concave(myHouse[roomIndex]);
+                }
+                else
+                {
+                    convex(myHouse[roomIndex]);
+                }
             }
         }
         catch (std::runtime_error &e)
@@ -380,6 +387,185 @@ void cPipeLayer::concave(cRoom &room)
         room.add(l);
     for (auto &l : subrooms.second.pipes())
         room.add(l);
+}
+
+void connectLoopDoor(
+    cRoom &room,
+    std::vector<cxy> &loop)
+{
+    cxy dc = room.getDoorCenter();
+
+    double df = dc.dist2(loop[0]);
+    double dl = dc.dist2(loop.back());
+    double dd = df;
+    cxy cnxhot = loop[0];
+    cxy cnxret = loop.back();
+    if (dl < df)
+    {
+        dd = dl;
+        cnxhot = loop.back();
+        cnxret = loop[0];
+    }
+
+    auto doorIndex = room.getDoorPoints()[0];
+
+    // location of return pipe in doorway
+    cxy dret = dc;
+    eMargin doorMargin = cPolygon::margin(
+        room.getWallPoints()[doorIndex],
+        room.getWallPoints()[doorIndex + 1]);
+    switch (doorMargin)
+    {
+    case eMargin::top:
+        dret.x -= room.seperation() / 2;
+        break;
+    case eMargin::bottom:
+        dret.x -= room.seperation() / 2;
+        break;
+    case eMargin::left:
+        dret.y += room.seperation() / 2;
+        break;
+    case eMargin::right:
+        dret.y -= room.seperation() / 2;
+        break;
+    default:
+        throw std::runtime_error("connectLoopDoor error");
+    }
+
+    // corner closest to door and return loop end
+    cxy doorWall1 = room.getWallPoints()[doorIndex - 1];
+    cxy doorWall2 = room.getWallPoints()[doorIndex + 2];
+    double dist1 = doorWall1.dist2(dret);
+    double dist2 = doorWall2.dist2(dret);
+    cxy cornerRet = doorWall1;
+    eMargin retMargin;
+    switch (doorMargin)
+    {
+    case eMargin::top:
+        retMargin = eMargin::left;
+        break;
+    case eMargin::right:
+        retMargin = eMargin::top;
+        break;
+    case eMargin::bottom:
+        retMargin = eMargin::right;
+        break;
+    case eMargin::left:
+        retMargin = eMargin::bottom;
+        break;
+    }
+    if (dist2 < dist1)
+    {
+        cornerRet = doorWall2;
+        switch (doorMargin)
+        {
+        case eMargin::top:
+            retMargin = eMargin::right;
+            break;
+        case eMargin::right:
+            retMargin = eMargin::bottom;
+            break;
+        case eMargin::bottom:
+            retMargin = eMargin::left;
+            break;
+        case eMargin::left:
+            retMargin = eMargin::top;
+            break;
+        }
+    }
+
+    room.add(
+        cPipeline(
+            cPipeline::ePipe::hot,
+            cPipeline::eLine::door,
+            {cnxhot, dc}));
+
+    std::vector<cxy> retloop;
+
+    cxy p1 = cnxret;
+    cxy p2 = cornerRet;
+    cxy p3 = dret;
+    switch (retMargin)
+    {
+    case eMargin::top:
+        p1.y += 0.5 * cRoom::seperation();
+        p2.x -= cRoom::seperation() / 2;
+        p2.y += cRoom::seperation() / 2;
+        p3.x -= cRoom::seperation() / 2;
+        break;
+    case eMargin::right:
+        p1.x += cRoom::seperation() / 2;
+        break;
+    case eMargin::left:
+        p1.x -= 0.5 * cRoom::seperation();
+        p2.x += cRoom::seperation() / 2;
+        p2.y -= cRoom::seperation() / 2;
+        p3.y -= cRoom::seperation() / 2;
+        break;
+    }
+    retloop.push_back(cnxret);
+    retloop.push_back(p1);
+    retloop.push_back(p2);
+    retloop.push_back(p3);
+    retloop.push_back(dret);
+
+    room.add(
+        cPipeline(
+            cPipeline::ePipe::ret,
+            cPipeline::eLine::door,
+            retloop));
+}
+
+void cPipeLayer::loop(cRoom &room)
+{
+    const auto &bounds = room.getBounds();
+    double topy = bounds.myYmin + room.seperation();
+    double boty = bounds.myYmax - room.seperation();
+    double rightx = bounds.myXmax - room.seperation();
+
+    cxy tl;
+    tl.y = INT_MAX;
+    for (auto &p : room.getWallPoints())
+    {
+        if (p.y < tl.y)
+        {
+            tl = p;
+        }
+    }
+    std::vector<cxy> loop;
+
+    cxy p = tl;
+
+    p.x += room.seperation();
+    p.y = topy;
+    loop.push_back(p);
+
+    while (true)
+    {
+        p.y = boty;
+        loop.push_back(p);
+
+        p.x += room.seperation();
+        if (p.x > rightx)
+            break;
+        loop.push_back(p);
+
+        p.y = topy;
+        loop.push_back(p);
+
+        p.x += room.seperation();
+        if (p.x > rightx)
+            break;
+        loop.push_back(p);
+    }
+
+    room.add(
+        cPipeline(
+            cPipeline::ePipe::hot,
+            cPipeline::eLine::spiral,
+            loop));
+
+    connectLoopDoor(room, loop);
 }
 
 void cPipeLayer::furnaceRoom(cRoom &room)

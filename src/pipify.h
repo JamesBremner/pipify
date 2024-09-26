@@ -30,6 +30,17 @@ enum class eMargin
 
 typedef std::pair<cxy, cxy> wall_t;
 
+struct sConfig
+{
+    int separation;
+    bool loop;
+};
+
+class cBoundingRectangle {
+  public:
+   double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
+   void set( const std::vector<cxy>& vertices);
+};
 class cPolygon
 {
 public:
@@ -38,17 +49,29 @@ public:
 
     cPolygon(const std::vector<cxy> &vertices);
 
+    cPolygon()
+    {}
+
     /// @brief get margin of side
     /// @param index of 1st vertex on side 
     /// @return top,left,bottom or right
 
     eMargin margin(int index) const;
 
+    int size() const
+    {
+        return myVertices.size();
+    }
     /// @brief get vertex location
     /// @param index 
     /// @return 
 
     cxy vertex(int index) const;
+
+    const std::vector<cxy>& getPoints() const
+    {
+        return myVertices;
+    }
 
     wall_t side(int index ) const;
 
@@ -138,15 +161,15 @@ class cRoom
 {
 
     static std::vector<cRoom> theHouse; // the house composed of rooms
-    static int theSeperation;           // separation between hot pipes, user units
+    static sConfig theConfig;           
     static int thefurnaceRoomIndex;
 
     std::string myName;
-    std::vector<cxy> myWallPoints; // room walls specified by a clockwise open polygon of 2D points
+    cPolygon myWallPoints; // room walls specified by a clockwise open polygon of 2D points
+    cBoundingRectangle myBounds;
     std::vector<int> myDoorPoints; // indices in myWallPoints of first point of pairs specifying doors
     cxy myDoorCenter;
-    double myXmin, myXmax, myYmin, myYmax, myMaxDim; // bounding rectangle
-    int myConcaveIndex;
+     int myConcaveIndex;
     eCorner myConcaveCorner;
 
     std::vector<cPipeline> myPipePoints;
@@ -187,21 +210,20 @@ public:
     }
     const std::vector<cxy> &getWallPoints() const
     {
-        return myWallPoints;
+        return myWallPoints.getPoints();
     }
-    const cxy &getWallDoorPoint(int index) const
+    const cxy getWallDoorPoint(int index) const
     {
-        if (index < 0 || index > myWallPoints.size() - 1)
-            throw std::runtime_error("getWallDoorPoint");
-        return myWallPoints[index];
+        return myWallPoints.vertex(index);
     }
     int getWallDoorIndex(const cxy &p) const
     {
-        auto it = std::find(
-            myWallPoints.begin(), myWallPoints.end(), p);
-        if (it == myWallPoints.end())
-            return -1;
-        return it - myWallPoints.begin();
+        throw std::runtime_error("getWallDoorIndex  NYI");
+        // auto it = std::find(
+        //     myWallPoints.begin(), myWallPoints.end(), p);
+        // if (it == myWallPoints.end())
+        //     return -1;
+        // return it - myWallPoints.begin();
     }
     std::vector<int> getDoorPoints() const
     {
@@ -220,7 +242,12 @@ public:
 
     double getMaxDim() const
     {
-        return myMaxDim;
+        return myBounds.myMaxDim;
+    }
+    const cBoundingRectangle&
+    getBounds() const
+    {
+        return myBounds;
     }
 
     /// @brief identify corner type
@@ -303,7 +330,7 @@ public:
 
     static void set(int seperation)
     {
-        theSeperation = seperation;
+        theConfig.separation = seperation;
     }
 
     /// @brief seperation between hot pipes, user units
@@ -311,7 +338,16 @@ public:
 
     static int seperation()
     {
-        return theSeperation;
+        return theConfig.separation;
+    }
+
+    static void setLoop( bool f = true )
+    {
+        theConfig.loop = f;
+    }
+    static bool loop()
+    {
+        return theConfig.loop;
     }
 
     static int roomCount()
@@ -439,6 +475,7 @@ private:
     void convex(cRoom &room);
     void concave(cRoom &room);
     void furnaceRoom(cRoom &room);
+    void loop(cRoom &room);
 };
 
 // free functions
