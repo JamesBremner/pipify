@@ -261,7 +261,8 @@ std::pair<cPipeline, cPipeline> spiralMaker(
             spiralReturn));
 }
 cxy closestOnSpiral(
-    cxy &point,
+    int closestSideIndex,
+    const cxy &point,
     const std::vector<cxy> &spiral)
 {
     double dmin = INT_MAX;
@@ -279,6 +280,7 @@ cxy closestOnSpiral(
             {
                 dmin = d;
                 ret = tst;
+                closestSideIndex = i;
             }
         }
     }
@@ -292,19 +294,24 @@ void connectSpiralSpiral(
     cRoom &concaveRoom,
     std::pair<cRoom, cRoom> &subrooms)
 {
-    cxy noDoorStartHot = subrooms.second.getSpiralHot()[0];
+    cxy secondSpiralHotStart = subrooms.second.getSpiralHot()[0];
     cxy noDoorStartRet = subrooms.second.getSpiralRet()[0];
-
-    cxy doorSpiralHot = closestOnSpiral(
-        noDoorStartHot,
+    int closestSideIndex;
+    cxy firstSpiralHotNearest = closestOnSpiral(
+        closestSideIndex,
+        secondSpiralHotStart,
         subrooms.first.getSpiralHot());
+    if( firstSpiralHotNearest.x != secondSpiralHotStart.x ) {
+        firstSpiralHotNearest.y = secondSpiralHotStart.y;
+    }
     cPipeline plhot(
         cPipeline::ePipe::hot,
         cPipeline::eLine::spiral2spiral,
-        {doorSpiralHot, noDoorStartHot});
+        {firstSpiralHotNearest, secondSpiralHotStart});
     concaveRoom.add(plhot);
 
     cxy doorSpiralRet = closestOnSpiral(
+        closestSideIndex,
         noDoorStartRet,
         subrooms.first.getSpiralRet());
     cPipeline plret(

@@ -72,9 +72,11 @@ wall_t cPolygon::side( int index ) const
 
 cxy cPolygon::vertex(int index) const
 {
-    if (0 > index || index > myVertices.size() - 1)
+    if (0 > index || index > myVertices.size())
         throw std::runtime_error(
             "cPolygon::margin bad parameter");
+    if( index == myVertices.size() )
+        index = 0;
     return myVertices[index];
 }
 
