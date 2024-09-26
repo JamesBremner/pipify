@@ -190,11 +190,11 @@ std::pair<cxy, cxy> marginFind(
 /// @return location of door center
 
 cxy doorCenter(
-    const std::vector<cxy> &wall,
+    const cPolygon &wall,
     int index)
 {
-    cxy d1 = wall[index];
-    cxy d2 = wall[index + 1];
+    cxy d1 = wall.vertex(index);
+    cxy d2 = wall.vertex(index + 1);
     double widthHalf = sqrt(d1.dist2(d2)) / 2;
     cxy ret = d1;
     eMargin m = cPolygon::margin(d1, d2);
@@ -551,14 +551,14 @@ cRoom::cRoom(
     }
     myWallPoints = wallPoints;
     myDoorPoints = doorPoints;
-    boundingRectangle();
+    myBounds.set(myWallPoints.getPoints());
 
     if (doorPoints.size())
         myDoorCenter = doorCenter(
             myWallPoints,
             myDoorPoints[0]);
 
-    angle(myWallPoints);
+    //angle(myWallPoints);
 
     myConcaveCorner = isConcave(myConcaveIndex);
 }
@@ -590,7 +590,7 @@ std::vector<std::vector<cxy>> cRoom::wallSegments()
         doorIndex = 0;
     for (int idw = 0; idw < myWallPoints.size(); idw++)
     {
-        segment.push_back(myWallPoints[idw]);
+        segment.push_back(myWallPoints.vertex(idw));
         if (idw == myDoorPoints[doorIndex])
         {
             // door point
@@ -606,7 +606,7 @@ std::vector<std::vector<cxy>> cRoom::wallSegments()
         if (idw == myWallPoints.size() - 1)
         {
             // wall that closes the polygon
-            segment.push_back(myWallPoints[0]);
+            segment.push_back(myWallPoints.vertex(0));
         }
     }
     if (segment.size())
@@ -722,8 +722,8 @@ cxy cRoom::pipeDoor()
     // start at the first door
     // There should be only one door
     p1 = myDoorCenter;
-    cxy d1 = myWallPoints[myDoorPoints[0]];
-    cxy d2 = myWallPoints[myDoorPoints[0] + 1];
+    cxy d1 = myWallPoints.vertex(myDoorPoints[0]);
+    cxy d2 = myWallPoints.vertex(myDoorPoints[0] + 1);
 
     // switch on margin where door is placed
     switch (cPolygon::margin(d1, d2))
@@ -765,13 +765,13 @@ cxy cRoom::pipeDoor()
     return p2;
 }
 
-void cRoom::boundingRectangle()
+void cBoundingRectangle::set( const std::vector<cxy>& vertices)
 {
     myXmin = INT_MAX;
     myXmax = -1;
     myYmin = INT_MAX;
     myYmax = -1;
-    for (auto &p : myWallPoints)
+    for (auto &p : vertices)
     {
         if (p.x < myXmin)
             myXmin = p.x;
