@@ -110,13 +110,9 @@ cPipeLayer::cPipeLayer(std::vector<cRoom> &house)
             {
                 furnaceRoom(myHouse[roomIndex]);
             }
-            else if (myHouse[roomIndex].isConcave())
-            {
-                concave(myHouse[roomIndex]);
-            }
             else
             {
-                convex(myHouse[roomIndex]);
+                loop(myHouse[roomIndex]);
             }
         }
         catch (std::runtime_error &e)
@@ -373,6 +369,56 @@ void cPipeLayer::concave(cRoom &room)
         room.add(l);
     for (auto &l : subrooms.second.pipes())
         room.add(l);
+}
+
+void cPipeLayer::loop(cRoom &room)
+{
+    const auto &bounds = room.getBounds();
+    double topy = bounds.myYmin + 2 * room.seperation();
+    double boty = bounds.myYmax - 2 * room.seperation();
+    double rightx = bounds.myXmax - 2 * room.seperation();
+
+    cxy tl;
+    tl.y = INT_MAX;
+    for (auto &p : room.getWallPoints())
+    {
+        if (p.y < tl.y)
+        {
+            tl = p;
+        }
+    }
+    std::vector<cxy> loop;
+
+    cxy p = tl;
+
+    p.x += 2 * room.seperation();
+    p.y = topy;
+    loop.push_back(p);
+
+    while (true)
+    {
+        p.y = boty;
+        loop.push_back(p);
+
+        p.x += room.seperation();
+        if (p.x > rightx)
+            break;
+        loop.push_back(p);
+
+        p.y = topy;
+        loop.push_back(p);
+
+        p.x += room.seperation();
+        if (p.x > rightx)
+            break;
+        loop.push_back(p);
+    }
+
+    room.add(
+        cPipeline(
+            cPipeline::ePipe::hot,
+            cPipeline::eLine::spiral,
+            loop));
 }
 
 void cPipeLayer::furnaceRoom(cRoom &room)

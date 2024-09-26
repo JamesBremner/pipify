@@ -238,6 +238,11 @@ public:
     {
         return myBounds.myMaxDim;
     }
+    const cBoundingRectangle&
+    getBounds() const
+    {
+        return myBounds;
+    }
 
     /// @brief identify corner type
     /// @param p1
@@ -455,6 +460,7 @@ private:
     void convex(cRoom &room);
     void concave(cRoom &room);
     void furnaceRoom(cRoom &room);
+    void loop(cRoom &room);
 };
 
 // free functions
