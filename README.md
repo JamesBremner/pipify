@@ -33,11 +33,19 @@ Shows return pipe in blue.
 
 ![image](https://github.com/user-attachments/assets/f4267a52-29ab-46cf-9d72-7721a6545550)
 
-- **File**  Open processed floor plan input file
+ ### File  
+ 
+  - Open processed floor plan input file
 
-- **Run**  Run the pipes through the room, or run the unit tests
+### Run
+ 
+  - Run the pipes through the room
+  - Run the unit tests
 
- - **Edit** Change the pipe separation
+### Edit
+  
+   - Change the pipe separation
+   - Change the layout algorithm
 
 
 
