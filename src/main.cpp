@@ -18,18 +18,23 @@ sConfig cRoom::theConfig;
 
 int cRoom::thefurnaceRoomIndex;
 
-double angle(
+/// @brief true if every corner angle 90 degrees
+/// @param poly 
+/// @return 
+
+bool isOrtho(
     std::vector<cxy> poly)
 {
-    double a = cxy::clockwise(poly.back(), poly[0], poly[0]);
     for (int i = 1; i < poly.size() - 2; i++)
     {
-        a = cxy::clockwise(poly[i - 1], poly[i], poly[i + 1]) / 3.142;
-        // std::cout << a << " ";
+        double a = cxy::clockwise(poly[i - 1], poly[i], poly[i + 1]);
+        int da = (int)(round(a * 100)) % 157;
+         //std::cout << da << " ";
+         if( abs(da) > 1)
+            return false;
     }
 
-    // std::cout << "\n";
-    return a;
+    return true;
 }
 
 cPolygon::cPolygon(const std::vector<cxy> &vertices)
@@ -450,7 +455,7 @@ std::pair<cRoom, cRoom> concaveSplit(
         ConcaveRoom, noDoors);
 
     // which new wall endpoints to include in first subroom
-    // ( the subroom that includes fitst point in concave room )
+    // ( the subroom that includes first point in concave room )
     int concaveIndex;
     eCorner corner;
     ConcaveRoom.getConcave(concaveIndex, corner);
@@ -560,11 +565,13 @@ cRoom::cRoom(
             myWallPoints,
             myDoorPoints[0]);
 
-    //angle(myWallPoints);
+    if( ! isOrtho(myWallPoints.getPoints()))
+        throw std::runtime_error(
+            myName + " is not orthogonal"        );
 
     myConcaveCorner = isConcave(myConcaveIndex);
 
-    setLoop(false);
+
 }
 
 void cRoom::add(

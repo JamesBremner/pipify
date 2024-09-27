@@ -81,6 +81,11 @@ public:
 
     bool isClockwise() const;
 
+    bool isInside( const cxy p ) const
+    {
+        return p.isInside( myVertices );
+    }
+
     /// @brief which margin of the room are two points on
     /// @param p1
     /// @param p2
@@ -277,6 +282,11 @@ public:
     bool isConcave() const
     {
         return (myConcaveIndex >= 0);
+    }
+
+    bool isInside( const cxy p ) const
+    {
+        return myWallPoints.isInside( p );
     }
 
     bool getConcave(int &index, eCorner &corner) const

@@ -1,3 +1,4 @@
+#include <cmath>
 #include "pipify.h"
 
 /// @brief Connect pipe spiral with the furnace pipes in the doorway
@@ -308,7 +309,8 @@ void connectSpiralSpiral(
         closestSideIndex,
         secondSpiralHotStart,
         subrooms.first.getSpiralHot());
-    if( firstSpiralHotNearest.x != secondSpiralHotStart.x ) {
+    if (firstSpiralHotNearest.x != secondSpiralHotStart.x)
+    {
         firstSpiralHotNearest.y = secondSpiralHotStart.y;
     }
     cPipeline plhot(
@@ -365,15 +367,23 @@ void cPipeLayer::convex(cRoom &room)
     room.add(spiral.first);
     room.add(spiral.second);
 }
+// add subroom pipes to a room
+void addSubrooms(
+    cRoom &room,
+    std::pair<cRoom, cRoom> &subrooms)
+{
+    for (auto &l : subrooms.first.pipes())
+        room.add(l);
+    for (auto &l : subrooms.second.pipes())
+        room.add(l);
+}
 
 void cPipeLayer::concave(cRoom &room)
 {
     // split concave room into 2 convex rooms
-
     auto subrooms = concaveSplit(room);
 
     // layout pipes in subrooms
-
     convex(subrooms.first);
     convex(subrooms.second);
 
@@ -383,16 +393,16 @@ void cPipeLayer::concave(cRoom &room)
         subrooms);
 
     // add subroom pipes to this room
-    for (auto &l : subrooms.first.pipes())
-        room.add(l);
-    for (auto &l : subrooms.second.pipes())
-        room.add(l);
+    addSubrooms(room, subrooms);
 }
 
 void connectLoopDoor(
     cRoom &room,
     std::vector<cxy> &loop)
 {
+    if (!room.doorCount())
+        return;
+
     cxy dc = room.getDoorCenter();
 
     double df = dc.dist2(loop[0]);
@@ -516,25 +526,31 @@ void connectLoopDoor(
             retloop));
 }
 
-void cPipeLayer::loop(cRoom &room)
+cxy topLeft(const cRoom &room)
 {
+    cxy tl(INT_MAX, INT_MAX);
+    for (auto &p : room.getWallPoints())
+    {
+        if (p.y <= tl.y)
+        {
+            if (p.x < tl.x)
+                tl = p;
+        }
+    }
+    return tl;
+}
+
+std::vector<cxy> loopConvex(cRoom &room)
+{
+    std::vector<cxy> loop;
     const auto &bounds = room.getBounds();
     double topy = bounds.myYmin + room.seperation();
     double boty = bounds.myYmax - room.seperation();
     double rightx = bounds.myXmax - room.seperation();
 
-    cxy tl;
-    tl.y = INT_MAX;
-    for (auto &p : room.getWallPoints())
-    {
-        if (p.y < tl.y)
-        {
-            tl = p;
-        }
-    }
-    std::vector<cxy> loop;
+    // start at top left
 
-    cxy p = tl;
+    cxy p = topLeft(room);
 
     p.x += room.seperation();
     p.y = topy;
@@ -557,6 +573,68 @@ void cPipeLayer::loop(cRoom &room)
         if (p.x > rightx)
             break;
         loop.push_back(p);
+    }
+
+    return loop;
+}
+
+void orderSubroomsByX(
+    std::pair<cRoom, cRoom> &subrooms)
+{
+    double x1, x2;
+    x1 = x2 = 0;
+    int i = 0;
+    while (fabs(x1 - x2) < 1)
+    {
+        x1 = subrooms.first.getWallPoints()[i].x;
+        x2 = subrooms.second.getWallPoints()[i].x;
+        i++;
+    }
+    if (x1 > x2)
+    {
+        auto temp = subrooms.first;
+        subrooms.first = subrooms.second;
+        subrooms.second = temp;
+    }
+}
+
+std::vector<cxy> loopConcave(cRoom &room)
+{
+    // split concave room into 2 convex rooms
+
+    auto subrooms = concaveSplit(room);
+
+    // order subrooms into increasing x
+
+    orderSubroomsByX(subrooms);
+
+    // layout pipes in subrooms
+
+    auto loop = loopConvex(subrooms.first);
+    auto loop2 = loopConvex(subrooms.second);
+
+    // combine loops
+
+    loop.insert(
+        loop.end(),
+        loop2.begin(), loop2.end());
+
+    return loop;
+
+    // // add to room
+}
+
+void cPipeLayer::loop(cRoom &room)
+{
+    std::vector<cxy> loop;
+    
+    if (room.isConcave())
+    {
+        loop = loopConcave(room);
+    }
+    else
+    {
+        loop = loopConvex(room);
     }
 
     room.add(
